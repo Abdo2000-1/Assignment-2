@@ -28,7 +28,8 @@ void MainComponent::loadButtonClicked()
                 player.loadFile(f);
                 player.play();
                 gui.setFileName(f.getFileName());
-                gui.setPlayButtonText("Pause");
+                string pause_button_utf8 = "\xE2\x8F\xB8";
+                gui.setPlayButtonText(pause_button_utf8);
             }
         });
 }
@@ -38,19 +39,28 @@ void MainComponent::playPauseButtonClicked()
     if (player.isPlaying())
     {
         player.pause();
-        gui.setPlayButtonText("Play");
+        string play_button_utf8 = "\xE2\x96\xB6";
+
+
+        gui.setPlayButtonText(play_button_utf8);
     }
     else
     {
         player.play();
-        gui.setPlayButtonText("Pause");
+
+        string pause_button_utf8 = "\xE2\x8F\xB8";
+        gui.setPlayButtonText(pause_button_utf8);
     }
 }
 
 void MainComponent::stopButtonClicked()
 {
     player.stop();
-    gui.setPlayButtonText("Play");
+
+    string play_button_utf8 = "\xE2\x96\xB6"; 
+  
+
+    gui.setPlayButtonText(play_button_utf8);
 }
 
 void MainComponent::muteButtonClicked()

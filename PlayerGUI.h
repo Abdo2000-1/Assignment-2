@@ -33,12 +33,13 @@ public:
 private:
     Listener* listener = nullptr;
 
-  //  string mute_emoji_utf8 = "\xF0\x9F\x94\x87";
-
     juce::TextButton loadBtn{ "Load" };
-    juce::TextButton playPauseBtn{ "Play" };
-    juce::TextButton stopBtn{ "Stop" };
-    juce::TextButton muteBtn{ "Mute"};
+
+    // The CORRECT way for JUCE framework
+    juce::TextButton playPauseBtn{ juce::String::fromUTF8("\xE2\x96\xB6") };   // Play icon 
+    juce::TextButton stopBtn{ juce::String::fromUTF8("\xE2\x8F\xB9") };      // Stop icon 
+    juce::TextButton muteBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x8A") };   // Unmute icon 
+
     juce::Slider volSlider;
     juce::Label fileLabel;
 
