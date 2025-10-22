@@ -19,6 +19,9 @@ public:
     void playPauseButtonClicked() override;
     void stopButtonClicked() override;
     void muteButtonClicked() override;
+    void skipButtonClicked() override;
+    void backButtonClicked() override;
+
     void volumeSliderChanged(float newValue) override;
 
 private:
