@@ -1,4 +1,4 @@
-#include "MainComponent.h"
+﻿#include "MainComponent.h"
 
 using namespace std; 
 
@@ -9,6 +9,8 @@ MainComponent::MainComponent()
 
     setSize(520, 260);
     setAudioChannels(0, 2);
+    
+    gui.setPlayerAudioSource(player);
 }
 
 MainComponent::~MainComponent()
@@ -28,8 +30,7 @@ void MainComponent::loadButtonClicked()
                 player.loadFile(f);
                 player.play();
                 gui.setFileName(f.getFileName());
-                string pause_button_utf8 = "\xE2\x8F\xB8";
-                gui.setPlayButtonText(pause_button_utf8);
+                gui.setPlayButtonText("Pause");
             }
         });
 }
@@ -39,28 +40,19 @@ void MainComponent::playPauseButtonClicked()
     if (player.isPlaying())
     {
         player.pause();
-        string play_button_utf8 = "\xE2\x96\xB6";
-
-
-        gui.setPlayButtonText(play_button_utf8);
+        gui.setPlayButtonText("Play");
     }
     else
     {
         player.play();
-
-        string pause_button_utf8 = "\xE2\x8F\xB8";
-        gui.setPlayButtonText(pause_button_utf8);
+        gui.setPlayButtonText("Pause");
     }
 }
 
 void MainComponent::stopButtonClicked()
 {
     player.stop();
-
-    string play_button_utf8 = "\xE2\x96\xB6"; 
-  
-
-    gui.setPlayButtonText(play_button_utf8);
+    gui.setPlayButtonText("Play");
 }
 
 void MainComponent::muteButtonClicked()
@@ -69,6 +61,18 @@ void MainComponent::muteButtonClicked()
     string unmute_emoji_utf8 = "\xF0\x9F\x94\x8A";
     string mute_emoji_utf8 = "\xF0\x9F\x94\x87";
     gui.setMuteButtonText(player.isMuted() ?  mute_emoji_utf8 : unmute_emoji_utf8);
+}
+
+void MainComponent::skipButtonClicked()
+{
+    player.skip(10);
+    
+}
+
+void MainComponent::backButtonClicked()
+{
+    player.skip(-10);
+
 }
 
 void MainComponent::volumeSliderChanged(float newValue)

@@ -1,4 +1,5 @@
 #include "PlayerAudio.h"
+#include "PlayerGUI.h"
 
 PlayerAudio::PlayerAudio()
 {
@@ -13,6 +14,14 @@ PlayerAudio::~PlayerAudio()
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
     player.prepareToPlay(samplesPerBlockExpected, sampleRate);
+}
+
+double PlayerAudio::getCurrentPosition() const {
+    return player.getCurrentPosition();
+}
+
+double PlayerAudio::getLengthInSeconds() const {
+    return player.getLengthInSeconds();
 }
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
@@ -58,6 +67,21 @@ void PlayerAudio::stop()
 {
     player.stop();
     player.setPosition(0); // Explicitly rewind to start.
+}
+
+void PlayerAudio::skip(double skipSeconds) {
+    double newPositionSeconds = player.getCurrentPosition();
+    newPositionSeconds += skipSeconds;
+    
+    if (newPositionSeconds > player.getLengthInSeconds()) {
+        newPositionSeconds = player.getLengthInSeconds();
+
+    }
+    else if (newPositionSeconds < 0) {
+        newPositionSeconds = 0;
+    }
+
+    player.setPosition(newPositionSeconds);
 }
 
 void PlayerAudio::setGain(float gain)

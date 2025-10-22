@@ -11,15 +11,23 @@ public:
     void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) override;
     void releaseResources() override;
 
+    double getCurrentPosition() const;
+
+    double getLengthInSeconds() const;
+
     void loadFile(const juce::File& file);
     void play();
     void pause();
     void stop();
+    
+    void skip(double newPositionSeconds);
+
     void setGain(float gain);
     bool isPlaying() const;
 
     void toggleMute();
     bool isMuted() const;
+    juce::AudioTransportSource& getTransportSource() { return player; }
 
 private:
     juce::AudioFormatManager fmt;
