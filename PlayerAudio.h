@@ -12,14 +12,12 @@ public:
     void releaseResources() override;
 
     double getCurrentPosition() const;
-
     double getLengthInSeconds() const;
 
     void loadFile(const juce::File& file);
     void play();
     void pause();
     void stop();
-    
     void skip(double newPositionSeconds);
 
     void setGain(float gain);
@@ -27,6 +25,10 @@ public:
 
     void toggleMute();
     bool isMuted() const;
+
+    void toggleLoop();
+    bool isLooping() const;
+
     juce::AudioTransportSource& getTransportSource() { return player; }
 
 private:
@@ -35,7 +37,10 @@ private:
     juce::AudioTransportSource player;
 
     bool mutedState{ false };
+
     float volumeBeforeMute{ 0.5f };
+
+    bool loopEnabled{ false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

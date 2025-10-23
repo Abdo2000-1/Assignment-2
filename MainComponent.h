@@ -21,6 +21,7 @@ public:
     void muteButtonClicked() override;
     void skipButtonClicked() override;
     void backButtonClicked() override;
+    void loopButtonClicked() override;        
 
     void volumeSliderChanged(float newValue) override;
 

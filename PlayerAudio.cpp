@@ -123,3 +123,16 @@ bool PlayerAudio::isMuted() const
 {
     return mutedState;
 }
+
+void PlayerAudio::toggleLoop()
+{
+    loopEnabled = !loopEnabled;
+    if (reader)
+        reader->setLooping(loopEnabled);
+}
+
+
+bool PlayerAudio::isLooping() const
+{
+    return loopEnabled;
+}

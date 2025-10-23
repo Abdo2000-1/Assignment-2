@@ -1,6 +1,6 @@
-﻿#include "MainComponent.h"
+#include "MainComponent.h"
 
-using namespace std; 
+using namespace std;
 
 MainComponent::MainComponent()
 {
@@ -9,7 +9,7 @@ MainComponent::MainComponent()
 
     setSize(520, 260);
     setAudioChannels(0, 2);
-    
+
     gui.setPlayerAudioSource(player);
 }
 
@@ -60,19 +60,17 @@ void MainComponent::muteButtonClicked()
     player.toggleMute();
     string unmute_emoji_utf8 = "\xF0\x9F\x94\x8A";
     string mute_emoji_utf8 = "\xF0\x9F\x94\x87";
-    gui.setMuteButtonText(player.isMuted() ?  mute_emoji_utf8 : unmute_emoji_utf8);
+    gui.setMuteButtonText(player.isMuted() ? mute_emoji_utf8 : unmute_emoji_utf8);
 }
 
 void MainComponent::skipButtonClicked()
 {
     player.skip(10);
-    
 }
 
 void MainComponent::backButtonClicked()
 {
     player.skip(-10);
-
 }
 
 void MainComponent::volumeSliderChanged(float newValue)
@@ -80,9 +78,40 @@ void MainComponent::volumeSliderChanged(float newValue)
     player.setGain(newValue);
 }
 
+void MainComponent::loopButtonClicked()
+{
+    player.toggleLoop();      
 
-void MainComponent::prepareToPlay(int samples, double rate) { player.prepareToPlay(samples, rate); }
-void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& info) { player.getNextAudioBlock(info); }
-void MainComponent::releaseResources() { player.releaseResources(); }
-void MainComponent::paint(juce::Graphics& g) { g.fillAll(juce::Colour::fromRGB(40, 70, 50)); }
-void MainComponent::resized() { gui.setBounds(getLocalBounds()); }
+
+    string Loop = "\xF0\x9F\x94\x81";
+    string Unloop = "\xF0\x9F\x94\x83";
+    if (player.isLooping())
+        gui.setLoopButtonText(Loop);
+    else
+        gui.setLoopButtonText(Unloop);
+}
+
+void MainComponent::prepareToPlay(int samples, double rate)
+{
+    player.prepareToPlay(samples, rate);
+}
+
+void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& info)
+{
+    player.getNextAudioBlock(info);
+}
+
+void MainComponent::releaseResources()
+{
+    player.releaseResources();
+}
+
+void MainComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colour::fromRGB(40, 70, 50));
+}
+
+void MainComponent::resized()
+{
+    gui.setBounds(getLocalBounds());
+}
