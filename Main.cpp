@@ -1,6 +1,6 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
-using namespace std;//20242201
+using namespace std; //Last Edition
 
 class SimpleAudioPlayer : public juce::JUCEApplication
 {

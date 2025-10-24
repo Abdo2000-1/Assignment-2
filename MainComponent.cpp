@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
-using namespace std;
+using namespace std;//Last Edition
+
 
 MainComponent::MainComponent()
 {
@@ -30,7 +31,7 @@ void MainComponent::loadButtonClicked()
                 player.loadFile(f);
                 player.play();
                 gui.setFileName(f.getFileName());
-                gui.setPlayButtonText("Pause");
+                gui.setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
             }
         });
 }
@@ -40,19 +41,20 @@ void MainComponent::playPauseButtonClicked()
     if (player.isPlaying())
     {
         player.pause();
-        gui.setPlayButtonText("Play");
+        gui.setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
     }
     else
     {
         player.play();
-        gui.setPlayButtonText("Pause");
+        gui.setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
     }
 }
 
 void MainComponent::stopButtonClicked()
 {
     player.stop();
-    gui.setPlayButtonText("Play");
+    gui.setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
+
 }
 
 void MainComponent::muteButtonClicked()
@@ -84,7 +86,7 @@ void MainComponent::loopButtonClicked()
 
 
     string Loop = "\xF0\x9F\x94\x81";
-    string Unloop = "\xF0\x9F\x94\x83";
+    string Unloop = "\xF0\x9F\x94\x80";
     if (player.isLooping())
         gui.setLoopButtonText(Loop);
     else

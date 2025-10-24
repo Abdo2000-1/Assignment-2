@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "PlayerAudio.h" 
 #include "PlayerGUI.h"
+//Last Edition
 
 class MainComponent : public juce::AudioAppComponent, public PlayerGUI::Listener
 {

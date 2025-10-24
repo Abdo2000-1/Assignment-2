@@ -1,6 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
 #include "PlayerAudio.h"
+//Last Edition
+
 
 class PlayerGUI : public juce::Component,
     public juce::Button::Listener,
@@ -45,13 +47,13 @@ private:
 
     void paint(juce::Graphics& g) override;
 
-    juce::TextButton loadBtn{ "Load" };
-    juce::TextButton playPauseBtn{ "Play" };
-    juce::TextButton stopBtn{ "Stop" };
-    juce::TextButton muteBtn{ "Mute" };
-    juce::TextButton backBtn{ "-10s" };
-    juce::TextButton skipBtn{ "10s" };
-    juce::TextButton loopBtn{ "Loop" };                  
+    juce::TextButton loadBtn{ "Open" };
+    juce::TextButton playPauseBtn{ juce::String::fromUTF8("\xE2\x96\xB6") };
+    juce::TextButton stopBtn{ juce::String::fromUTF8("\xE2\x8F\xB9") };
+    juce::TextButton muteBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x8A") };
+    juce::TextButton backBtn{ juce::String::fromUTF8("\xE2\x8F\xAA") };
+    juce::TextButton skipBtn{ juce::String::fromUTF8("\xE2\x8F\xA9") };
+    juce::TextButton loopBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x81") };           
 
     juce::Slider progressSlider;
     juce::Slider volSlider;
