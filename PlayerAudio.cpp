@@ -1,4 +1,4 @@
-#include "PlayerAudio.h"
+﻿#include "PlayerAudio.h"
 #include "PlayerGUI.h"
 //Last Edition
 
@@ -27,6 +27,16 @@ double PlayerAudio::getLengthInSeconds() const {
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
+    // --- Task 2: A-B Loop Logic ---
+   
+    if (abLoopEnabled && loopEndPointSeconds > loopStartPointSeconds && player.isPlaying())
+    {
+        if (player.getCurrentPosition() >= loopEndPointSeconds)
+        {
+            player.setPosition(loopStartPointSeconds);
+        }
+    }
+
     player.getNextAudioBlock(bufferToFill);
 }
 
@@ -43,14 +53,15 @@ void PlayerAudio::loadFile(const juce::File& file)
         player.setSource(nullptr);
         reader.reset(new juce::AudioFormatReaderSource(r, true));
         player.setSource(reader.get(), 0, nullptr, r->sampleRate);
+
+        // Reset A-B points on new file load
+        loopStartPointSeconds = 0.0;
+        loopEndPointSeconds = 0.0;
+        abLoopEnabled = false;
     }
 }
 
-// --- Logic adjustment clarification ---
-// The logic for play, pause, and stop is correct as it follows standard player behavior.
-// play() resumes or starts from the beginning if stopped.
-// pause() stops at the current position.
-// stop() stops and rewinds to the beginning.
+// ... (play, pause, stop functions remain the same) ...
 
 void PlayerAudio::play()
 {
@@ -73,7 +84,7 @@ void PlayerAudio::stop()
 void PlayerAudio::skip(double skipSeconds) {
     double newPositionSeconds = player.getCurrentPosition();
     newPositionSeconds += skipSeconds;
-    
+
     if (newPositionSeconds > player.getLengthInSeconds()) {
         newPositionSeconds = player.getLengthInSeconds();
 
@@ -102,7 +113,7 @@ bool PlayerAudio::isPlaying() const
     return player.isPlaying();
 }
 
-// --- Mute Functionality Implementation (NEW) ---
+// ... (Mute functions remain the same) ...
 void PlayerAudio::toggleMute()
 {
     mutedState = !mutedState;
@@ -130,10 +141,64 @@ void PlayerAudio::toggleLoop()
     loopEnabled = !loopEnabled;
     if (reader)
         reader->setLooping(loopEnabled);
+
+    // A-B loop and full loop are mutually exclusive
+    if (loopEnabled && abLoopEnabled)
+    {
+        abLoopEnabled = false;
+    }
 }
 
 
 bool PlayerAudio::isLooping() const
 {
     return loopEnabled;
+}
+
+// --- Task 1: Seeking Implementation ---
+void PlayerAudio::setPositionNormalized(double normPos)
+{
+    if (normPos < 0.0) normPos = 0.0;
+    if (normPos > 1.0) normPos = 1.0;
+    double newPositionSeconds = player.getLengthInSeconds() * normPos;
+    player.setPosition(newPositionSeconds);
+}
+
+// --- Task 2: A-B Loop Implementation ---
+void PlayerAudio::setLoopA()
+{
+    loopStartPointSeconds = player.getCurrentPosition();
+    // If A is set after B, or B is 0, B should be the end
+    if (loopEndPointSeconds < loopStartPointSeconds || loopEndPointSeconds == 0.0)
+    {
+        loopEndPointSeconds = player.getLengthInSeconds();
+    }
+}
+
+void PlayerAudio::setLoopB()
+{
+    loopEndPointSeconds = player.getCurrentPosition();
+    // If B is set before A, A should be the start
+    if (loopStartPointSeconds > loopEndPointSeconds)
+    {
+        loopStartPointSeconds = 0.0;
+    }
+}
+
+void PlayerAudio::toggleABLoop()
+{
+    abLoopEnabled = !abLoopEnabled;
+
+    // A-B loop and full loop are mutually exclusive
+    if (abLoopEnabled && loopEnabled)
+    {
+        loopEnabled = false;
+        if (reader)
+            reader->setLooping(loopEnabled);
+    }
+}
+
+bool PlayerAudio::isABLooping() const
+{
+    return abLoopEnabled;
 }

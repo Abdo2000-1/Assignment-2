@@ -22,11 +22,19 @@ public:
     void muteButtonClicked() override;
     void skipButtonClicked() override;
     void backButtonClicked() override;
-    void loopButtonClicked() override;        
-
+    void loopButtonClicked() override;
     void volumeSliderChanged(float newValue) override;
 
+    // --- New handler declarations ---
+    void progressSliderChanged(double newValue) override; // Task 1
+    void setAButtonClicked() override;                   // Task 2
+    void setBButtonClicked() override;                   // Task 2
+    void abLoopToggleButtonClicked() override;           // Task 2
+
 private:
+    // --- Helper function to sync button text ---
+    void updateLoopButtonText();
+
     PlayerAudio player;
     PlayerGUI gui;
     std::unique_ptr<juce::FileChooser> chooser;

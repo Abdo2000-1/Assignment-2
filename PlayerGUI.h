@@ -20,8 +20,14 @@ public:
         virtual void backButtonClicked() = 0;
         virtual void skipButtonClicked() = 0;
         virtual void muteButtonClicked() = 0;
-        virtual void loopButtonClicked() = 0;               
+        virtual void loopButtonClicked() = 0;
         virtual void volumeSliderChanged(float newValue) = 0;
+
+        // --- New Listener Methods ---
+        virtual void progressSliderChanged(double newValue) = 0; // Task 1
+        virtual void setAButtonClicked() = 0;                   // Task 2
+        virtual void setBButtonClicked() = 0;                   // Task 2
+        virtual void abLoopToggleButtonClicked() = 0;           // Task 2
     };
 
     PlayerGUI();
@@ -39,7 +45,8 @@ public:
     void setPlayButtonText(const juce::String& text);
     void skipButtonText(const juce::String& text);
     void backButtonText(const juce::String& text);
-    void setLoopButtonText(const juce::String& text);      
+    void setLoopButtonText(const juce::String& text);
+    void setABLoopButtonText(const juce::String& text); // Task 2
 
 private:
     Listener* listener = nullptr;
@@ -53,14 +60,20 @@ private:
     juce::TextButton muteBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x8A") };
     juce::TextButton backBtn{ juce::String::fromUTF8("\xE2\x8F\xAA") };
     juce::TextButton skipBtn{ juce::String::fromUTF8("\xE2\x8F\xA9") };
-    juce::TextButton loopBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x81") };           
+    juce::TextButton loopBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x81") };
+
+    // --- Task 2: A-B Loop Buttons ---
+    juce::TextButton setABtn{ "Set A" };
+    juce::TextButton setBBtn{ "Set B" };
+    juce::TextButton abLoopToggleBtn{ "A-B" };
+
 
     juce::Slider progressSlider;
     juce::Slider volSlider;
 
     juce::Label fileLabel;
 
-    bool isLooping = false;                              
+    bool isLooping = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI)
 };

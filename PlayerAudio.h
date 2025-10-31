@@ -31,6 +31,15 @@ public:
     void toggleLoop();
     bool isLooping() const;
 
+    // --- Task 1: Seeking ---
+    void setPositionNormalized(double normPos);
+
+    // --- Task 2: A-B Loop ---
+    void setLoopA();
+    void setLoopB();
+    void toggleABLoop();
+    bool isABLooping() const;
+
     juce::AudioTransportSource& getTransportSource() { return player; }
 
 private:
@@ -43,6 +52,11 @@ private:
     float volumeBeforeMute{ 0.5f };
 
     bool loopEnabled{ false };
+
+    // --- A-B Loop State ---
+    bool abLoopEnabled{ false };
+    double loopStartPointSeconds{ 0.0 };
+    double loopEndPointSeconds{ 0.0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

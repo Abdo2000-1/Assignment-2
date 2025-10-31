@@ -12,11 +12,32 @@ MainComponent::MainComponent()
     setAudioChannels(0, 2);
 
     gui.setPlayerAudioSource(player);
+
+    // Set initial button text
+    updateLoopButtonText();
 }
 
 MainComponent::~MainComponent()
 {
     shutdownAudio();
+}
+
+// --- Helper function to keep loop buttons in sync ---
+void MainComponent::updateLoopButtonText()
+{
+    // Full loop button
+    juce::String Loop = juce::String::fromUTF8("\xF0\x9F\x94\x81");
+    juce::String Unloop = juce::String::fromUTF8("\xF0\x9F\x94\x80");
+    if (player.isLooping())
+        gui.setLoopButtonText(Loop);
+    else
+        gui.setLoopButtonText(Unloop);
+
+    // A-B loop button
+    if (player.isABLooping())
+        gui.setABLoopButtonText("A-B On");
+    else
+        gui.setABLoopButtonText("A-B");
 }
 
 void MainComponent::loadButtonClicked()
@@ -32,6 +53,7 @@ void MainComponent::loadButtonClicked()
                 player.play();
                 gui.setFileName(f.getFileName());
                 gui.setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
+                updateLoopButtonText(); // Reset loop buttons on new file
             }
         });
 }
@@ -82,16 +104,35 @@ void MainComponent::volumeSliderChanged(float newValue)
 
 void MainComponent::loopButtonClicked()
 {
-    player.toggleLoop();      
-
-
-    string Loop = "\xF0\x9F\x94\x81";
-    string Unloop = "\xF0\x9F\x94\x80";
-    if (player.isLooping())
-        gui.setLoopButtonText(Loop);
-    else
-        gui.setLoopButtonText(Unloop);
+    player.toggleLoop();
+    updateLoopButtonText(); // Update both buttons
 }
+
+// --- Task 1: Handle progress slider seek ---
+void MainComponent::progressSliderChanged(double newValue)
+{
+    player.setPositionNormalized(newValue);
+}
+
+
+void MainComponent::setAButtonClicked()
+{
+    player.setLoopA();
+   
+}
+
+void MainComponent::setBButtonClicked()
+{
+    player.setLoopB();
+    
+}
+
+void MainComponent::abLoopToggleButtonClicked()
+{
+    player.toggleABLoop();
+    updateLoopButtonText(); 
+}
+
 
 void MainComponent::prepareToPlay(int samples, double rate)
 {
