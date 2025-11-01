@@ -102,6 +102,11 @@ void MainComponent::volumeSliderChanged(float newValue)
     player.setGain(newValue);
 }
 
+void MainComponent::speedSliderChanged(float newValue)
+{
+    player.setSpeed(newValue);
+}
+
 void MainComponent::loopButtonClicked()
 {
     player.toggleLoop();
@@ -118,19 +123,19 @@ void MainComponent::progressSliderChanged(double newValue)
 void MainComponent::setAButtonClicked()
 {
     player.setLoopA();
-   
+
 }
 
 void MainComponent::setBButtonClicked()
 {
     player.setLoopB();
-    
+
 }
 
 void MainComponent::abLoopToggleButtonClicked()
 {
     player.toggleABLoop();
-    updateLoopButtonText(); 
+    updateLoopButtonText();
 }
 
 

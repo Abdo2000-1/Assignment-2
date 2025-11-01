@@ -24,6 +24,7 @@ public:
     void backButtonClicked() override;
     void loopButtonClicked() override;
     void volumeSliderChanged(float newValue) override;
+    void speedSliderChanged(float newValue) override;
 
     // --- New handler declarations ---
     void progressSliderChanged(double newValue) override; // Task 1

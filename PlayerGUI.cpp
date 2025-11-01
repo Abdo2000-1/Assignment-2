@@ -12,8 +12,10 @@ PlayerGUI::PlayerGUI()
     addAndMakeVisible(muteBtn);
     addAndMakeVisible(loopBtn);
     addAndMakeVisible(volSlider);
+    addAndMakeVisible(speedSlider);
     addAndMakeVisible(progressSlider);
     addAndMakeVisible(fileLabel);
+    addAndMakeVisible(speedLabel);
 
     // --- Task 2: Add new buttons ---
     addAndMakeVisible(setABtn);
@@ -24,6 +26,10 @@ PlayerGUI::PlayerGUI()
     volSlider.setRange(0.0, 1.0, 0.01);
     volSlider.setValue(0.5);
     volSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+
+    speedSlider.setRange(0.5, 2.0, 0.01);
+    speedSlider.setValue(1.0);
+    speedSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
     progressSlider.setRange(0.0, 1.0);
     progressSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
@@ -36,6 +42,7 @@ PlayerGUI::PlayerGUI()
     stopBtn.addListener(this);
     muteBtn.addListener(this);
     volSlider.addListener(this);
+    speedSlider.addListener(this);
     backBtn.addListener(this);
     skipBtn.addListener(this);
     loopBtn.addListener(this);
@@ -50,6 +57,10 @@ PlayerGUI::PlayerGUI()
 
     fileLabel.setColour(juce::Label::textColourId, juce::Colours::darkgrey);
     fileLabel.setText("No file loaded", juce::dontSendNotification);
+
+    speedLabel.setColour(juce::Label::textColourId, juce::Colours::darkgrey);
+    speedLabel.setText("1.00x", juce::dontSendNotification);
+    speedLabel.setJustificationType(juce::Justification::centred);
 }
 
 void PlayerGUI::setPlayerAudioSource(PlayerAudio& audioSource)
@@ -110,6 +121,10 @@ void PlayerGUI::resized()
     muteBtn.setBounds(volSlider.getRight() + gap, y_controls, btnWidth, 30);
     loopBtn.setBounds(muteBtn.getRight() + gap, y_controls, loopWidth, 30);
 
+    int y_speed = y_controls + 40;
+    speedLabel.setBounds(x_controls - 60, y_speed, 50, 30);
+    speedSlider.setBounds(x_controls, y_speed, volWidth, 30);
+
     // File Label & Load Button
     loadBtn.setBounds(20, 10, 60, 30);
     fileLabel.setBounds(20, loadBtn.getBottom() + 10, getWidth() - 40, 30);
@@ -138,10 +153,13 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider)
 {
     if (listener && slider == &volSlider)
         listener->volumeSliderChanged((float)slider->getValue());
-    // --- Task 1: Handle progress slider drag ---
+    else if (listener && slider == &speedSlider)
+    {
+        speedLabel.setText(juce::String(slider->getValue(), 2) + "x", juce::dontSendNotification);
+        listener->speedSliderChanged((float)slider->getValue());
+    }
     else if (listener && slider == &progressSlider)
     {
-        // Only update position if the user is the one moving the slider
         if (slider->isMouseButtonDown())
         {
             listener->progressSliderChanged(slider->getValue());

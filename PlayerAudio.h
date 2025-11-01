@@ -23,6 +23,7 @@ public:
     void skip(double newPositionSeconds);
 
     void setGain(float gain);
+    void setSpeed(float speed);
     bool isPlaying() const;
 
     void toggleMute();
@@ -46,6 +47,7 @@ private:
     juce::AudioFormatManager fmt;
     std::unique_ptr<juce::AudioFormatReaderSource> reader;
     juce::AudioTransportSource player;
+    std::unique_ptr<juce::ResamplingAudioSource> resampler;
 
     bool mutedState{ false };
 
@@ -57,6 +59,9 @@ private:
     bool abLoopEnabled{ false };
     double loopStartPointSeconds{ 0.0 };
     double loopEndPointSeconds{ 0.0 };
+
+    int currentSamplesPerBlock{ 0 };
+    double currentSampleRate{ 0.0 };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)
 };

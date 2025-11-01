@@ -14,7 +14,11 @@ PlayerAudio::~PlayerAudio()
 
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
+    currentSamplesPerBlock = samplesPerBlockExpected;
+    currentSampleRate = sampleRate;
     player.prepareToPlay(samplesPerBlockExpected, sampleRate);
+    if (resampler)
+        resampler->prepareToPlay(samplesPerBlockExpected, sampleRate);
 }
 
 double PlayerAudio::getCurrentPosition() const {
@@ -28,7 +32,7 @@ double PlayerAudio::getLengthInSeconds() const {
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
     // --- Task 2: A-B Loop Logic ---
-   
+
     if (abLoopEnabled && loopEndPointSeconds > loopStartPointSeconds && player.isPlaying())
     {
         if (player.getCurrentPosition() >= loopEndPointSeconds)
@@ -37,11 +41,16 @@ void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferTo
         }
     }
 
-    player.getNextAudioBlock(bufferToFill);
+    if (resampler)
+        resampler->getNextAudioBlock(bufferToFill);
+    else
+        player.getNextAudioBlock(bufferToFill);
 }
 
 void PlayerAudio::releaseResources()
 {
+    if (resampler)
+        resampler->releaseResources();
     player.releaseResources();
 }
 
@@ -53,6 +62,10 @@ void PlayerAudio::loadFile(const juce::File& file)
         player.setSource(nullptr);
         reader.reset(new juce::AudioFormatReaderSource(r, true));
         player.setSource(reader.get(), 0, nullptr, r->sampleRate);
+        resampler.reset(new juce::ResamplingAudioSource(&player, false));
+        resampler->setResamplingRatio(1.0);
+        if (currentSampleRate > 0.0 && currentSamplesPerBlock > 0)
+            resampler->prepareToPlay(currentSamplesPerBlock, currentSampleRate);
 
         // Reset A-B points on new file load
         loopStartPointSeconds = 0.0;
@@ -111,6 +124,12 @@ void PlayerAudio::setGain(float gain)
 bool PlayerAudio::isPlaying() const
 {
     return player.isPlaying();
+}
+
+void PlayerAudio::setSpeed(float speed)
+{
+    if (resampler)
+        resampler->setResamplingRatio(speed);
 }
 
 // ... (Mute functions remain the same) ...

@@ -22,6 +22,7 @@ public:
         virtual void muteButtonClicked() = 0;
         virtual void loopButtonClicked() = 0;
         virtual void volumeSliderChanged(float newValue) = 0;
+        virtual void speedSliderChanged(float newValue) = 0;
 
         // --- New Listener Methods ---
         virtual void progressSliderChanged(double newValue) = 0; // Task 1
@@ -70,8 +71,10 @@ private:
 
     juce::Slider progressSlider;
     juce::Slider volSlider;
+    juce::Slider speedSlider;
 
     juce::Label fileLabel;
+    juce::Label speedLabel;
 
     bool isLooping = false;
 
