@@ -40,7 +40,7 @@ public:
     void toggleABLoop();
     bool isABLooping() const;
 
-    juce::AudioTransportSource& getTransportSource() { return player; }
+    juce::AudioTransportSource& getTransportSource();
 
 private:
     juce::AudioFormatManager fmt;

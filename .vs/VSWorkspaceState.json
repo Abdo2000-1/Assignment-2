@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Builds",
+    "\\Builds\\VisualStudio2022",
+    "\\Builds\\VisualStudio2022\\x64",
+    "\\Builds\\VisualStudio2022\\x64\\Debug",
+    "\\Builds\\VisualStudio2022\\x64\\Debug\\App",
+    "\\Builds\\VisualStudio2022\\x64\\Release",
+    "\\Builds\\VisualStudio2022\\x64\\Release\\App"
+  ],
+  "SelectedNode": "\\PlayerAudio.h",
+  "PreviewInSolutionExplorer": false
+}
