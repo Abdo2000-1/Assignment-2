@@ -1,27 +1,33 @@
-# Visual Studio temporary files
-*.VC.db
-*.VC.VC.opendb
-*.VC.VC.db
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
+# Ignore everything by default
+*
 
-# Visual Studio Build Folders
-[Bb]uild*/
-[Bb]in*/
-[Oo]bj*/
-*.ilk
-*.meta
-*.pdb
-*.idb
-*.exp
-*.iobj
-*.ipdb
-*.log
+# Keep only your source files and the .jucer file
+!*.cpp
+!*.h
+!*.jucer
 
-# Visual Studio .vs folder
-.vs/
+# Keep directories leading to files you want
+!*/
 
-# JUCE Generated Files
+# Ignore JUCE modules folder
+modules/
+
+# Ignore JUCE auto-generated library code
+JuceLibraryCode/
+
+# Ignore build folders
 Builds/
+bin/
+obj/
+
+# Ignore IDE files
+.vs/
+*.vcxproj*
+*.sln*
+*.user*
+*.opensdf
+*.sdf
+*.ipch
+*.ncb
+*.suo
+*.log
