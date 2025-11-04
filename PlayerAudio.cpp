@@ -1,15 +1,7 @@
 #include "PlayerAudio.h"
 #include "PlayerGUI.h"
 
-
-PlayerAudio& PlayerAudio::getInstance()
-{
-    static PlayerAudio instance;
-    return instance;
-}
-
-juce::AudioTransportSource& PlayerAudio::getTransportSource() { return player; }
-
+//Last Edition
 
 PlayerAudio::PlayerAudio()
 {
@@ -23,7 +15,11 @@ PlayerAudio::~PlayerAudio()
 
 void PlayerAudio::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
+    currentSamplesPerBlock = samplesPerBlockExpected;
+    currentSampleRate = sampleRate;
     player.prepareToPlay(samplesPerBlockExpected, sampleRate);
+    if (resampler)
+        resampler->prepareToPlay(samplesPerBlockExpected, sampleRate);
 }
 
 double PlayerAudio::getCurrentPosition() const {
@@ -36,11 +32,25 @@ double PlayerAudio::getLengthInSeconds() const {
 
 void PlayerAudio::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
-    player.getNextAudioBlock(bufferToFill);
+    // --- Task 2: A-B Loop Logic ---
+    if (abLoopEnabled && loopEndPointSeconds > loopStartPointSeconds && player.isPlaying())
+    {
+        if (player.getCurrentPosition() >= loopEndPointSeconds)
+        {
+            player.setPosition(loopStartPointSeconds);
+        }
+    }
+
+    if (resampler)
+        resampler->getNextAudioBlock(bufferToFill);
+    else
+        player.getNextAudioBlock(bufferToFill);
 }
 
 void PlayerAudio::releaseResources()
 {
+    if (resampler)
+        resampler->releaseResources();
     player.releaseResources();
 }
 
@@ -51,15 +61,22 @@ void PlayerAudio::loadFile(const juce::File& file)
         player.stop();
         player.setSource(nullptr);
         reader.reset(new juce::AudioFormatReaderSource(r, true));
+        reader->setLooping(loopEnabled);
         player.setSource(reader.get(), 0, nullptr, r->sampleRate);
+        resampler.reset(new juce::ResamplingAudioSource(&player, false));
+        resampler->setResamplingRatio(1.0);
+        if (currentSampleRate > 0.0 && currentSamplesPerBlock > 0)
+            resampler->prepareToPlay(currentSamplesPerBlock, currentSampleRate);
+
+        // Reset A-B points on new file load
+        loopStartPointSeconds = 0.0;
+        loopEndPointSeconds = 0.0;
+        abLoopEnabled = false;
+
+        // store reader metadata (basic)
+        metadata = r->metadataValues;
     }
 }
-
-// --- Logic adjustment clarification ---
-// The logic for play, pause, and stop is correct as it follows standard player behavior.
-// play() resumes or starts from the beginning if stopped.
-// pause() stops at the current position.
-// stop() stops and rewinds to the beginning.
 
 void PlayerAudio::play()
 {
@@ -70,7 +87,7 @@ void PlayerAudio::play()
 void PlayerAudio::pause()
 {
     if (player.isPlaying())
-        player.stop(); // transportSource.stop() correctly pauses without resetting position.
+        player.stop();
 }
 
 void PlayerAudio::stop()
@@ -82,10 +99,9 @@ void PlayerAudio::stop()
 void PlayerAudio::skip(double skipSeconds) {
     double newPositionSeconds = player.getCurrentPosition();
     newPositionSeconds += skipSeconds;
-    
+
     if (newPositionSeconds > player.getLengthInSeconds()) {
         newPositionSeconds = player.getLengthInSeconds();
-
     }
     else if (newPositionSeconds < 0) {
         newPositionSeconds = 0;
@@ -94,17 +110,14 @@ void PlayerAudio::skip(double skipSeconds) {
     player.setPosition(newPositionSeconds);
 }
 
-
-
 void PlayerAudio::setGain(float gain)
 {
-    // If the user changes volume, unmute the player automatically
     if (mutedState && gain > 0.0f) {
         mutedState = false;
     }
     player.setGain(gain);
     if (!mutedState) {
-        volumeBeforeMute = gain; // Store the last non-mute volume
+        volumeBeforeMute = gain;
     }
 }
 
@@ -113,13 +126,17 @@ bool PlayerAudio::isPlaying() const
     return player.isPlaying();
 }
 
-// --- Mute Functionality Implementation (NEW) ---
+void PlayerAudio::setSpeed(float speed)
+{
+    if (resampler)
+        resampler->setResamplingRatio(speed);
+}
+
 void PlayerAudio::toggleMute()
 {
     mutedState = !mutedState;
     if (mutedState)
     {
-        // Store current volume only if it's not already 0
         if (player.getGain() > 0.0f) {
             volumeBeforeMute = player.getGain();
         }
@@ -134,4 +151,69 @@ void PlayerAudio::toggleMute()
 bool PlayerAudio::isMuted() const
 {
     return mutedState;
+}
+
+void PlayerAudio::toggleLoop()
+{
+    loopEnabled = !loopEnabled;
+    if (reader)
+        reader->setLooping(loopEnabled);
+
+    if (loopEnabled && abLoopEnabled)
+    {
+        abLoopEnabled = false;
+    }
+}
+
+bool PlayerAudio::isLooping() const
+{
+    return loopEnabled;
+}
+
+void PlayerAudio::setPositionNormalized(double normPos)
+{
+    if (normPos < 0.0) normPos = 0.0;
+    if (normPos > 1.0) normPos = 1.0;
+    double newPositionSeconds = player.getLengthInSeconds() * normPos;
+    player.setPosition(newPositionSeconds);
+}
+
+void PlayerAudio::setLoopA()
+{
+    loopStartPointSeconds = player.getCurrentPosition();
+    if (loopEndPointSeconds < loopStartPointSeconds || loopEndPointSeconds == 0.0)
+    {
+        loopEndPointSeconds = player.getLengthInSeconds();
+    }
+}
+
+void PlayerAudio::setLoopB()
+{
+    loopEndPointSeconds = player.getCurrentPosition();
+    if (loopStartPointSeconds > loopEndPointSeconds)
+    {
+        loopStartPointSeconds = 0.0;
+    }
+}
+
+void PlayerAudio::toggleABLoop()
+{
+    abLoopEnabled = !abLoopEnabled;
+
+    if (abLoopEnabled && loopEnabled)
+    {
+        loopEnabled = false;
+        if (reader)
+            reader->setLooping(loopEnabled);
+    }
+}
+
+bool PlayerAudio::isABLooping() const
+{
+    return abLoopEnabled;
+}
+
+juce::AudioTransportSource& PlayerAudio::getTransportSource()
+{
+    return player;
 }
