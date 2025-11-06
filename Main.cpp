@@ -1,16 +1,16 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
-using namespace std;//20242201
+using namespace std;//
 
 class SimpleAudioPlayer : public juce::JUCEApplication
 {
 public:
-    const juce::String getApplicationName() override { return "Simple Audio Player"; }
-    const juce::String getApplicationVersion() override { return "1.0"; }
+    const juce::String getApplicationName() override { return "Al Ahly Audio Player"; }
+    const juce::String getApplicationVersion() override { return "2.0"; }
 
     void initialise(const juce::String&) override
     {
-        mainWindow = make_unique<MainWindow>(getApplicationName());
+        mainWindow = std::make_unique<MainWindow>(getApplicationName());
     }
 
     void shutdown() override
@@ -24,12 +24,18 @@ private:
     public:
         MainWindow(juce::String name)
             : DocumentWindow(name,
-                juce::Colours::lightgrey,
+                juce::Colour::fromRGB(30, 35, 50), 
                 DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
             setContentOwned(new MainComponent(), true);
-            centreWithSize(500, 260);
+
+           
+            setResizable(true, true);
+            setResizeLimits(500, 700, 1200, 2000); 
+            centreWithSize(500, 400); 
+          
+
             setVisible(true);
         }
 
@@ -39,7 +45,7 @@ private:
         }
     };
 
-    unique_ptr<MainWindow> mainWindow;
+    std::unique_ptr<MainWindow> mainWindow;
 };
 
 START_JUCE_APPLICATION(SimpleAudioPlayer)

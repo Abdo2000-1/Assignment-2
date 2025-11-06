@@ -93,7 +93,7 @@ void PlayerAudio::pause()
 void PlayerAudio::stop()
 {
     player.stop();
-    player.setPosition(0); // Explicitly rewind to start.
+    player.setPosition(0); 
 }
 
 void PlayerAudio::skip(double skipSeconds) {

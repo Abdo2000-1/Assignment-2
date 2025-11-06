@@ -9,24 +9,25 @@ class PlayerGUI : public juce::Component,
     public juce::Timer
 {
 public:
+    
     class Listener
     {
     public:
         virtual ~Listener() = default;
-        virtual void loadButtonClicked() = 0;
-        virtual void playPauseButtonClicked() = 0;
-        virtual void stopButtonClicked() = 0;
-        virtual void backButtonClicked() = 0;
-        virtual void skipButtonClicked() = 0;
-        virtual void muteButtonClicked() = 0;
-        virtual void loopButtonClicked() = 0;
-        virtual void volumeSliderChanged(float newValue) = 0;
-        virtual void speedSliderChanged(float newValue) = 0;
+        virtual void loadButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void playPauseButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void stopButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void backButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void skipButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void muteButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void loopButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void volumeSliderChanged(PlayerGUI* whichGui, float newValue) = 0;
+        virtual void speedSliderChanged(PlayerGUI* whichGui, float newValue) = 0;
 
-        virtual void progressSliderChanged(double newValue) = 0;
-        virtual void setAButtonClicked() = 0;
-        virtual void setBButtonClicked() = 0;
-        virtual void abLoopToggleButtonClicked() = 0;
+        virtual void progressSliderChanged(PlayerGUI* whichGui, double newValue) = 0;
+        virtual void setAButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void setBButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void abLoopToggleButtonClicked(PlayerGUI* whichGui) = 0;
     };
 
     PlayerGUI();
@@ -51,6 +52,8 @@ public:
     void setLoopButtonText(const juce::String& text);
     void setABLoopButtonText(const juce::String& text);
 
+    void setDeckName(const juce::String& name);
+
 private:
     Listener* listener = nullptr;
     PlayerAudio* playerAudioSource{ nullptr };
@@ -73,6 +76,13 @@ private:
 
     juce::Label fileLabel;
     juce::Label speedLabel;
+    juce::Label deckNameLabel; 
+
+  
+    juce::Label currentTimeLabel;
+    juce::Label totalTimeLabel;
+    juce::String formatTime(double seconds);
+    // ----------------------------
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI)
 };
