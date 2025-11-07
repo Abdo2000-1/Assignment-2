@@ -7,11 +7,21 @@
     <FILE id="EkfFLb" name="MainComponent.cpp" compile="1" resource="0"
           file="MainComponent.cpp"/>
     <FILE id="Mwy0xt" name="MainComponent.h" compile="0" resource="0" file="MainComponent.h"/>
-    <FILE id="vANihy" name="picosha2h.h" compile="0" resource="0" file="picosha2h.h"/>
+    <FILE id="tmypF3" name="MarkManager.cpp" compile="1" resource="0" file="MarkManager.cpp"/>
+    <FILE id="hlr21P" name="MarkManager.h" compile="0" resource="0" file="MarkManager.h"/>
+    <FILE id="vANihy" name="picosha2.h" compile="0" resource="0" file="picosha2.h"/>
     <FILE id="A24YLu" name="PlayerAudio.cpp" compile="1" resource="0" file="PlayerAudio.cpp"/>
     <FILE id="ktMDyw" name="PlayerAudio.h" compile="0" resource="0" file="PlayerAudio.h"/>
     <FILE id="GYZoxR" name="PlayerGui.cpp" compile="1" resource="0" file="PlayerGui.cpp"/>
     <FILE id="At72XD" name="PlayerGUI.h" compile="0" resource="0" file="PlayerGUI.h"/>
+    <FILE id="WwDMsU" name="PlaylistComponent.cpp" compile="1" resource="0"
+          file="PlaylistComponent.cpp"/>
+    <FILE id="YMQ4BJ" name="PlaylistComponent.h" compile="0" resource="0"
+          file="PlaylistComponent.h"/>
+    <FILE id="YTgJSw" name="SessionManager.cpp" compile="1" resource="0"
+          file="SessionManager.cpp"/>
+    <FILE id="K65Y7A" name="SessionManager.h" compile="0" resource="0"
+          file="SessionManager.h"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>

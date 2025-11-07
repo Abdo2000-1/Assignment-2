@@ -62,6 +62,10 @@ MainComponent::MainComponent()
     addButton.setButtonText("+");
     addButton.onClick = [this] { addFileToPlaylist(); };
 
+
+    setSize(400, 200);
+
+
     addAndMakeVisible(deleteButton);
     deleteButton.setButtonText("Delete");
     deleteButton.onClick = [this] { deleteSelectedItem(); };
@@ -85,6 +89,7 @@ MainComponent::~MainComponent()
 {
     shutdownAudio();
 }
+
 
 
 void MainComponent::updateLoopButtonText(PlayerGUI& gui, PlayerAudio& player)
@@ -251,6 +256,7 @@ void MainComponent::stopButtonClicked(PlayerGUI* whichGui)
     gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 }
 
+
 void MainComponent::muteButtonClicked(PlayerGUI* whichGui)
 {
     PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
@@ -272,6 +278,61 @@ void MainComponent::backButtonClicked(PlayerGUI* whichGui)
 {
     PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
     player->skip(-10);
+}
+
+void MainComponent::markButtonClicked(PlayerGUI* whichGui)
+{
+    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
+    juce::uint64 uid = player->getFile()->getFileIdentifier();
+    juce::String fileID = std::to_string(uid);
+    markManager.addMark(fileID, player->getCurrentPosition());
+    updateMarksMenu(whichGui);
+    juce::ComboBox* marksMenu = whichGui->getMarksMenu();
+
+    marksMenu->setSelectedId(0);
+
+}
+
+void MainComponent::deleteMarkRequested(PlayerGUI* whichGui, int selectedID) {
+    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
+    juce::uint64 uid = player->getFile()->getFileIdentifier();
+    juce::String fileID = std::to_string(uid);
+    markManager.removeMark(fileID, selectedID - 1);
+    updateMarksMenu(whichGui);
+    juce::ComboBox* marksMenu = whichGui->getMarksMenu();
+    marksMenu->setSelectedId(0);
+
+}
+
+void MainComponent::marksMenuChanged(PlayerGUI* whichGui)
+{
+    PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
+    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
+
+
+    juce::ComboBox* marksMenu= gui->getMarksMenu();
+
+    juce::String selectedMark = marksMenu->getText();
+
+    int start = selectedMark.indexOfChar('[');
+    int end = selectedMark.indexOfChar(']');
+
+    if (start >= 0 && end > start)
+    {
+        int length = end - start - 1;
+
+        selectedMark = selectedMark.substring(start + 1, start + 1 + length);
+    }
+
+
+    juce::Array<double> marks = markManager.getMarks(std::to_string(player->getFile()->getFileIdentifier()));
+
+
+
+    if (marksMenu->getText() != "") {
+        player->getTransportSource().setPosition(selectedMark.getDoubleValue());
+    }
+
 }
 
 
@@ -328,6 +389,9 @@ void MainComponent::abLoopToggleButtonClicked(PlayerGUI* whichGui)
     player->toggleABLoop();
     updateLoopButtonText(*gui, *player);
 }
+
+
+
 
 
 void MainComponent::sliderValueChanged(juce::Slider* slider)

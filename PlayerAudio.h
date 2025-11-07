@@ -45,11 +45,16 @@ public:
     // Metadata getter (from reader or external)
     const juce::StringPairArray& getMetadata() const { return metadata; }
 
+
+    juce::File* getFile() { return &m_file; }
+
 private:
     juce::AudioFormatManager fmt;
     std::unique_ptr<juce::AudioFormatReaderSource> reader;
     juce::AudioTransportSource player;
     std::unique_ptr<juce::ResamplingAudioSource> resampler;
+
+    juce::File m_file;
 
     bool mutedState{ false };
 

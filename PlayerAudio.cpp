@@ -58,6 +58,7 @@ void PlayerAudio::loadFile(const juce::File& file)
 {
     if (auto* r = fmt.createReaderFor(file))
     {
+        m_file = file;
         player.stop();
         player.setSource(nullptr);
         reader.reset(new juce::AudioFormatReaderSource(r, true));

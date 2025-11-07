@@ -1,6 +1,6 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
-using namespace std;//
+using namespace std;
 
 class SimpleAudioPlayer : public juce::JUCEApplication
 {
@@ -11,6 +11,18 @@ public:
     void initialise(const juce::String&) override
     {
         mainWindow = std::make_unique<MainWindow>(getApplicationName());
+        
+        MainComponent* mainComp = mainWindow->getMainComponent();
+
+        auto* session = mainComp->getSessionManager();
+
+        juce::uint64 uid1 = mainComp->getPlayerAudio1()->getFile()->getFileIdentifier();
+        juce::String fileID1 = std::to_string(uid1);
+
+        juce::uint64 uid2 = mainComp->getPlayerAudio2()->getFile()->getFileIdentifier();
+        juce::String fileID2 = std::to_string(uid2);
+
+        session->saveSession(fileID1, mainComp->getPlayerAudio1()->getCurrentPosition());
     }
 
     void shutdown() override
@@ -28,8 +40,8 @@ private:
                 DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
-            setContentOwned(new MainComponent(), true);
-
+            mainComponent = new MainComponent();
+            setContentOwned(mainComponent, true);
            
             setResizable(true, true);
             setResizeLimits(500, 700, 1200, 2000); 
@@ -41,8 +53,19 @@ private:
 
         void closeButtonPressed() override
         {
+            
+            auto* session = mainComponent->getSessionManager();
+
+
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
+
+        MainComponent* getMainComponent() const
+        {
+            return mainComponent;
+        }
+    private:
+        MainComponent* mainComponent = nullptr;
     };
 
     std::unique_ptr<MainWindow> mainWindow;

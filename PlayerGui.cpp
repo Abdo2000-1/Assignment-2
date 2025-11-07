@@ -26,6 +26,7 @@ PlayerGUI::PlayerGUI()
     addAndMakeVisible(playPauseBtn);
     addAndMakeVisible(stopBtn);
     addAndMakeVisible(skipBtn);
+    addAndMakeVisible(markBtn);
     addAndMakeVisible(backBtn);
     addAndMakeVisible(muteBtn);
     addAndMakeVisible(loopBtn);
@@ -34,6 +35,23 @@ PlayerGUI::PlayerGUI()
     addAndMakeVisible(progressSlider);
     addAndMakeVisible(fileLabel);
     addAndMakeVisible(speedLabel);
+    addAndMakeVisible(deleteMarkBtn);
+    deleteMarkBtn.onClick = [this] { deleteMarkBtnClicked(this); };
+
+
+
+
+    addAndMakeVisible(marksMenu);
+    marksMenu.setSelectedId(0);
+
+    marksMenu.onChange = [this]
+        {
+            if (listener != nullptr)
+                listener->marksMenuChanged(this);
+        };
+
+
+
 
     addAndMakeVisible(setABtn);
     addAndMakeVisible(setBBtn);
@@ -71,6 +89,7 @@ PlayerGUI::PlayerGUI()
     playPauseBtn.addListener(this);
     stopBtn.addListener(this);
     muteBtn.addListener(this);
+    markBtn.addListener(this);
     volSlider.addListener(this);
     speedSlider.addListener(this);
     backBtn.addListener(this);
@@ -104,10 +123,25 @@ PlayerGUI::PlayerGUI()
     // ---------------------------------
 }
 
+void PlayerGUI::deleteMarkBtnClicked(PlayerGUI* whichGui)
+{
+    int selectedID = marksMenu.getSelectedId();
+    if (selectedID > 0)
+    {
+        if (listener != nullptr)
+            listener->deleteMarkRequested(this, selectedID);
+    }
+}
+
 void PlayerGUI::setPlayerAudioSource(PlayerAudio& audioSource)
 {
     playerAudioSource = &audioSource;
 }
+
+//void PlayerGUI::marksMenuChanged(PlayerGUI* whichGui) {
+//    // code here
+//}
+
 
 void PlayerGUI::timerCallback()
 {
@@ -144,20 +178,19 @@ void PlayerGUI::addListener(Listener* listenerToAdd)
 
 void PlayerGUI::resized()
 {
-    
     auto bounds = getLocalBounds().reduced(10);
 
     int gap = 8;
     int tinyGap = 4;
     int timeLabelWidth = 50;
-    float rowHeight = bounds.getHeight() * 0.15f; 
-    rowHeight = juce::jlimit(25.0f, 40.0f, rowHeight); 
+    float rowHeight = bounds.getHeight() * 0.15f;
+    rowHeight = juce::jlimit(25.0f, 40.0f, rowHeight);
 
-    
+
     deckNameLabel.setBounds(bounds.removeFromTop(rowHeight * 0.8f));
     bounds.removeFromTop(gap);
 
-  
+
     auto topRow = bounds.removeFromTop(rowHeight);
     loadBtn.setBounds(topRow.removeFromLeft(topRow.getWidth() * 0.2f));
     topRow.removeFromLeft(gap);
@@ -165,7 +198,7 @@ void PlayerGUI::resized()
 
     bounds.removeFromTop(gap);
 
-  
+
     auto progressRow = bounds.removeFromTop(rowHeight * 0.8f);
     currentTimeLabel.setBounds(progressRow.removeFromLeft(timeLabelWidth));
     totalTimeLabel.setBounds(progressRow.removeFromRight(timeLabelWidth));
@@ -174,10 +207,28 @@ void PlayerGUI::resized()
 
     bounds.removeFromTop(gap);
 
-    
+
     auto transportRow = bounds.removeFromTop(rowHeight * 1.2f);
-    int btnCount = 5;
-    float btnWidth = (transportRow.getWidth() - (gap * (btnCount - 1))) / (float)btnCount;
+
+    int transportBtnCount = 5;
+    float singleBtnWidth = (transportRow.getWidth() - (gap * (transportBtnCount - 1))) / (float)transportBtnCount;
+
+    const int markBtnWidth = (int)(singleBtnWidth * 0.5f); 
+    const int marksMenuWidth = (int)(singleBtnWidth * 1.5f);
+    const int deleteBtnWidth = (int)(singleBtnWidth * 0.5f);
+
+    marksMenu.setBounds(transportRow.removeFromLeft(marksMenuWidth));
+    transportRow.removeFromLeft(tinyGap);
+
+    deleteMarkBtn.setBounds(transportRow.removeFromLeft(deleteBtnWidth));
+    transportRow.removeFromLeft(tinyGap);
+
+    markBtn.setBounds(transportRow.removeFromLeft(markBtnWidth));
+    transportRow.removeFromLeft(gap);
+
+    transportBtnCount = 5;
+    float btnWidth = (transportRow.getWidth() - (gap * (transportBtnCount - 1))) / (float)transportBtnCount;
+
 
     backBtn.setBounds(transportRow.removeFromLeft(btnWidth));
     transportRow.removeFromLeft(gap);
@@ -187,13 +238,13 @@ void PlayerGUI::resized()
     transportRow.removeFromLeft(gap);
     skipBtn.setBounds(transportRow.removeFromLeft(btnWidth));
     transportRow.removeFromLeft(gap);
-    loopBtn.setBounds(transportRow); 
+    loopBtn.setBounds(transportRow);
 
     bounds.removeFromTop(gap);
 
-   
+
     auto abRow = bounds.removeFromTop(rowHeight);
-    btnCount = 3;
+    int btnCount = 3;
     btnWidth = (abRow.getWidth() - (gap * (btnCount - 1))) / (float)btnCount;
     setABtn.setBounds(abRow.removeFromLeft(btnWidth));
     abRow.removeFromLeft(gap);
@@ -203,10 +254,10 @@ void PlayerGUI::resized()
 
     bounds.removeFromTop(gap);
 
-   
+
     auto sliderRow = bounds;
     auto volArea = sliderRow.removeFromLeft(sliderRow.getWidth() * 0.48f);
-    auto speedArea = sliderRow.removeFromRight(sliderRow.getWidth() * 0.96f); // 0.48 / (1 - 0.48)
+    auto speedArea = sliderRow.removeFromRight(sliderRow.getWidth() * 0.96f);
 
     muteBtn.setBounds(volArea.removeFromRight(volArea.getWidth() * 0.2f));
     volArea.removeFromRight(tinyGap);
@@ -296,6 +347,8 @@ void PlayerGUI::buttonClicked(juce::Button* button)
         listener->setAButtonClicked(this);
     else if (button == &setBBtn)
         listener->setBButtonClicked(this);
+    else if (button == &markBtn)
+        listener->markButtonClicked(this);
     else if (button == &abLoopToggleBtn)
         listener->abLoopToggleButtonClicked(this);
 }

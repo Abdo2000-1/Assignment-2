@@ -18,9 +18,12 @@ public:
         virtual void playPauseButtonClicked(PlayerGUI* whichGui) = 0;
         virtual void stopButtonClicked(PlayerGUI* whichGui) = 0;
         virtual void backButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void marksMenuChanged(PlayerGUI* whichGui) = 0;
+        virtual void markButtonClicked(PlayerGUI* whichGui) = 0;
         virtual void skipButtonClicked(PlayerGUI* whichGui) = 0;
         virtual void muteButtonClicked(PlayerGUI* whichGui) = 0;
         virtual void loopButtonClicked(PlayerGUI* whichGui) = 0;
+        virtual void deleteMarkRequested(PlayerGUI* whichGui, int selectedID) = 0;
         virtual void volumeSliderChanged(PlayerGUI* whichGui, float newValue) = 0;
         virtual void speedSliderChanged(PlayerGUI* whichGui, float newValue) = 0;
 
@@ -42,6 +45,9 @@ public:
 
     void addListener(Listener* listenerToAdd);
     void setPlayerAudioSource(PlayerAudio& player);
+    void marksMenuChanged(PlayerGUI* whichGui);
+    void deleteMarkBtnClicked(PlayerGUI* whichGui);
+
 
     // ---- Setters ----
     void setFileName(const juce::String& name);
@@ -54,6 +60,11 @@ public:
 
     void setDeckName(const juce::String& name);
 
+    juce::ComboBox* getMarksMenu() {
+        return &marksMenu;
+    }
+    
+
 private:
     Listener* listener = nullptr;
     PlayerAudio* playerAudioSource{ nullptr };
@@ -61,9 +72,11 @@ private:
     juce::TextButton loadBtn{ "Open" };
     juce::TextButton playPauseBtn{ juce::String::fromUTF8("\xE2\x96\xB6") };
     juce::TextButton stopBtn{ juce::String::fromUTF8("\xE2\x8F\xB9") };
+    juce::TextButton markBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x96") };
     juce::TextButton muteBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x8A") };
     juce::TextButton backBtn{ juce::String::fromUTF8("\xE2\x8F\xAA") };
     juce::TextButton skipBtn{ juce::String::fromUTF8("\xE2\x8F\xA9") };
+    juce::TextButton deleteMarkBtn{ "X" };
     juce::TextButton loopBtn{ juce::String::fromUTF8("\xF0\x9F\x94\x81") };
 
     juce::TextButton setABtn{ "Set A" };
@@ -82,6 +95,10 @@ private:
     juce::Label currentTimeLabel;
     juce::Label totalTimeLabel;
     juce::String formatTime(double seconds);
+
+    juce::ComboBox marksMenu;
+
+
     // ----------------------------
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerGUI)
