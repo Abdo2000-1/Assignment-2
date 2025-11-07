@@ -1,21 +1,13 @@
-#include "PlayerGUI.h"
+﻿#include "PlayerGUI.h"
 #include "PlayerAudio.h"
 
 //Last Edition
 
-
-juce::String PlayerGUI::formatTime(double seconds)
+PlayerGUI::PlayerGUI() : waveformDisplay(formatManager) 
 {
-    int totalSecs = static_cast<int>(std::round(seconds));
-    int mins = totalSecs / 60;
-    int secs = totalSecs % 60;
-    return juce::String::formatted("%02d:%02d", mins, secs);
-}
-// --------------------------------------------------------
+    // Register basic formats for the waveform thumbnail
+    formatManager.registerBasicFormats();
 
-PlayerGUI::PlayerGUI()
-{
-  
     juce::Colour backgroundColour = juce::Colour::fromRGB(40, 50, 90);
     juce::Colour trackColour = juce::Colours::cornflowerblue;
     juce::Colour thumbColour = juce::Colours::white;
@@ -32,7 +24,7 @@ PlayerGUI::PlayerGUI()
     addAndMakeVisible(loopBtn);
     addAndMakeVisible(volSlider);
     addAndMakeVisible(speedSlider);
-    addAndMakeVisible(progressSlider);
+    addAndMakeVisible(waveformDisplay); 
     addAndMakeVisible(fileLabel);
     addAndMakeVisible(speedLabel);
     addAndMakeVisible(deleteMarkBtn);
@@ -51,19 +43,12 @@ PlayerGUI::PlayerGUI()
         };
 
 
-
-
     addAndMakeVisible(setABtn);
     addAndMakeVisible(setBBtn);
     addAndMakeVisible(abLoopToggleBtn);
     abLoopToggleBtn.setButtonText("A-B");
 
-    // ---------------------------------
-
-    addAndMakeVisible(currentTimeLabel);
-    addAndMakeVisible(totalTimeLabel);
     addAndMakeVisible(deckNameLabel);
-    // ---------------------------------
 
     volSlider.setRange(0.0, 1.0, 0.01);
     volSlider.setValue(0.5);
@@ -73,15 +58,10 @@ PlayerGUI::PlayerGUI()
     speedSlider.setValue(1.0);
     speedSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
-    progressSlider.setRange(0.0, 1.0);
-    progressSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-    progressSlider.setSliderStyle(juce::Slider::LinearBar);
 
+    waveformDisplay.addListener(this);
+    // -----------------
 
-    progressSlider.setColour(juce::Slider::backgroundColourId, backgroundColour.brighter(0.2f));
-    progressSlider.setColour(juce::Slider::trackColourId, trackColour);
-    progressSlider.setColour(juce::Slider::thumbColourId, thumbColour);
-    // ------------------------------------
 
     startTimer(30);
 
@@ -95,7 +75,6 @@ PlayerGUI::PlayerGUI()
     backBtn.addListener(this);
     skipBtn.addListener(this);
     loopBtn.addListener(this);
-    progressSlider.addListener(this);
 
     setABtn.addListener(this);
     setBBtn.addListener(this);
@@ -108,19 +87,9 @@ PlayerGUI::PlayerGUI()
     speedLabel.setText("1.00x", juce::dontSendNotification);
     speedLabel.setJustificationType(juce::Justification::centred);
 
-
-    currentTimeLabel.setColour(juce::Label::textColourId, textColour);
-    currentTimeLabel.setText("00:00", juce::dontSendNotification);
-    currentTimeLabel.setJustificationType(juce::Justification::centredLeft);
-
-    totalTimeLabel.setColour(juce::Label::textColourId, textColour);
-    totalTimeLabel.setText("00:00", juce::dontSendNotification);
-    totalTimeLabel.setJustificationType(juce::Justification::centredRight);
-
     deckNameLabel.setColour(juce::Label::textColourId, textColour);
     deckNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
     deckNameLabel.setJustificationType(juce::Justification::centred);
-    // ---------------------------------
 }
 
 void PlayerGUI::deleteMarkBtnClicked(PlayerGUI* whichGui)
@@ -138,10 +107,19 @@ void PlayerGUI::setPlayerAudioSource(PlayerAudio& audioSource)
     playerAudioSource = &audioSource;
 }
 
-//void PlayerGUI::marksMenuChanged(PlayerGUI* whichGui) {
-//    // code here
-//}
 
+void PlayerGUI::loadFileForWaveform(const juce::File& file)
+{
+    waveformDisplay.loadFile(file);
+}
+
+
+void PlayerGUI::waveformClicked(double normalizedPosition)
+{
+    // Pass the seek event to MainComponent
+    if (listener)
+        listener->progressSliderChanged(this, normalizedPosition);
+}
 
 void PlayerGUI::timerCallback()
 {
@@ -152,21 +130,16 @@ void PlayerGUI::timerCallback()
 
         if (totalLength > 0.0)
         {
-            if (!progressSlider.isMouseButtonDown())
-            {
-                progressSlider.setValue(currentTime / totalLength, juce::dontSendNotification);
-            }
-          
-            currentTimeLabel.setText(formatTime(currentTime), juce::dontSendNotification);
-            totalTimeLabel.setText(formatTime(totalLength), juce::dontSendNotification);
-            // ---------------------------
+           
+            double normalizedPosition = currentTime / totalLength;
+            waveformDisplay.setPosition(normalizedPosition);
+            // ------------------
         }
         else
         {
             
-            progressSlider.setValue(0.0, juce::dontSendNotification);
-            currentTimeLabel.setText("00:00", juce::dontSendNotification);
-            totalTimeLabel.setText("00:00", juce::dontSendNotification);
+            waveformDisplay.setPosition(0.0);
+            // ------------------
         }
     }
 }
@@ -182,7 +155,6 @@ void PlayerGUI::resized()
 
     int gap = 8;
     int tinyGap = 4;
-    int timeLabelWidth = 50;
     float rowHeight = bounds.getHeight() * 0.15f;
     rowHeight = juce::jlimit(25.0f, 40.0f, rowHeight);
 
@@ -198,12 +170,10 @@ void PlayerGUI::resized()
 
     bounds.removeFromTop(gap);
 
-
+    
     auto progressRow = bounds.removeFromTop(rowHeight * 0.8f);
-    currentTimeLabel.setBounds(progressRow.removeFromLeft(timeLabelWidth));
-    totalTimeLabel.setBounds(progressRow.removeFromRight(timeLabelWidth));
-    progressRow.reduce(tinyGap, 0);
-    progressSlider.setBounds(progressRow);
+    waveformDisplay.setBounds(progressRow);
+    // -----------------
 
     bounds.removeFromTop(gap);
 
@@ -213,7 +183,7 @@ void PlayerGUI::resized()
     int transportBtnCount = 5;
     float singleBtnWidth = (transportRow.getWidth() - (gap * (transportBtnCount - 1))) / (float)transportBtnCount;
 
-    const int markBtnWidth = (int)(singleBtnWidth * 0.5f); 
+    const int markBtnWidth = (int)(singleBtnWidth * 0.5f);
     const int marksMenuWidth = (int)(singleBtnWidth * 1.5f);
     const int deleteBtnWidth = (int)(singleBtnWidth * 0.5f);
 
@@ -270,9 +240,9 @@ void PlayerGUI::resized()
 
 void PlayerGUI::paint(juce::Graphics& g)
 {
-   
+
     g.fillAll(juce::Colour::fromRGB(40, 50, 90));
-  
+
     g.setColour(juce::Colours::lightsteelblue.withAlpha(0.2f));
     g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(2.0f), 5.0f, 2.0f);
 }
@@ -280,16 +250,11 @@ void PlayerGUI::paint(juce::Graphics& g)
 void PlayerGUI::sliderValueChanged(juce::Slider* slider)
 {
     if (listener && slider == &volSlider)
-        listener->volumeSliderChanged(this, (float)slider->getValue()); 
+        listener->volumeSliderChanged(this, (float)slider->getValue());
     else if (listener && slider == &speedSlider)
     {
         speedLabel.setText(juce::String(slider->getValue(), 2) + "x", juce::dontSendNotification);
-        listener->speedSliderChanged(this, (float)slider->getValue()); 
-    }
-    else if (listener && slider == &progressSlider)
-    {
-        if (slider->isMouseButtonDown())
-            listener->progressSliderChanged(this, slider->getValue()); 
+        listener->speedSliderChanged(this, (float)slider->getValue());
     }
 }
 
@@ -328,7 +293,7 @@ void PlayerGUI::buttonClicked(juce::Button* button)
     if (listener == nullptr)
         return;
 
-  
+
     if (button == &loadBtn)
         listener->loadButtonClicked(this);
     else if (button == &playPauseBtn)

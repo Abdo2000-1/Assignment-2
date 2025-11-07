@@ -22,6 +22,8 @@
           file="SessionManager.cpp"/>
     <FILE id="K65Y7A" name="SessionManager.h" compile="0" resource="0"
           file="SessionManager.h"/>
+	  <FILE id="newId1" name="WaveformDisplay.cpp" compile="1" resource="0" file="WaveformDisplay.cpp"/>
+	  <FILE id="newId2" name="WaveformDisplay.h" compile="0" resource="0" file="WaveformDisplay.h"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>

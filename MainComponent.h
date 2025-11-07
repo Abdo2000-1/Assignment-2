@@ -5,6 +5,7 @@
 #include "PlayerAudio.h"
 #include "MarkManager.h"
 #include "SessionManager.h"
+#include "WaveformDisplay.h" // <-- ADDED
 
 class MainComponent : public juce::AudioAppComponent,
     public PlayerGUI::Listener,
@@ -44,9 +45,9 @@ public:
         PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
         PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
 
-        juce::Array<double> marks =  markManager.getMarks(std::to_string(player->getFile()->getFileIdentifier()));
+        juce::Array<double> marks = markManager.getMarks(std::to_string(player->getFile()->getFileIdentifier()));
 
-        juce::ComboBox* marksMenu= gui->getMarksMenu();
+        juce::ComboBox* marksMenu = gui->getMarksMenu();
         marksMenu->clear();
 
         for (int i = 1; i <= marks.size(); i++)
@@ -86,29 +87,33 @@ private:
     MarkManager markManager{ marksFile };
     SessionManager sessionManager{ sessionFile };
 
+    // ADDED THESE TWO:
+    juce::AudioFormatManager formatManager;
+    juce::AudioThumbnailCache thumbnailCache{ 5 };
+
     juce::MixerAudioSource mixer;
 
     juce::TextButton mixModeButton{ "Mix Mode" };
     bool isInMixMode{ false };
 
-  
+
     juce::Slider crossfader;
     juce::Label crossfaderLabel;
     juce::Label deck1Label;
     juce::Label deck2Label;
 
-    
+
     float player1ChannelVolume{ 0.5f };
     float player2ChannelVolume{ 0.5f };
 
-  
+
     void updateGains();
-   
+
 
     std::unique_ptr<juce::FileChooser> chooser;
     void updateLoopButtonText(PlayerGUI& gui, PlayerAudio& player);
 
-  
+
     juce::ListBox playlistBox;
     juce::TextButton addButton{ "Add" };
     juce::TextButton deleteButton{ "Delete" };

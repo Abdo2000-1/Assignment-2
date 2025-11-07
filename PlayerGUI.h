@@ -1,15 +1,17 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include "PlayerAudio.h"
+#include "WaveformDisplay.h" 
 
-//Last Edition
+
 class PlayerGUI : public juce::Component,
     public juce::Button::Listener,
     public juce::Slider::Listener,
-    public juce::Timer
+    public juce::Timer,
+    public WaveformDisplay::Listener 
 {
 public:
-    
+
     class Listener
     {
     public:
@@ -43,10 +45,15 @@ public:
     void sliderValueChanged(juce::Slider* slider) override;
     void timerCallback() override;
 
+    // --- Listener for Waveform ---
+    void waveformClicked(double normalizedPosition) override; 
+
     void addListener(Listener* listenerToAdd);
     void setPlayerAudioSource(PlayerAudio& player);
     void marksMenuChanged(PlayerGUI* whichGui);
     void deleteMarkBtnClicked(PlayerGUI* whichGui);
+
+    void loadFileForWaveform(const juce::File& file); 
 
 
     // ---- Setters ----
@@ -63,11 +70,14 @@ public:
     juce::ComboBox* getMarksMenu() {
         return &marksMenu;
     }
-    
+
 
 private:
     Listener* listener = nullptr;
     PlayerAudio* playerAudioSource{ nullptr };
+
+    // For loading waveform thumbnails
+    juce::AudioFormatManager formatManager;
 
     juce::TextButton loadBtn{ "Open" };
     juce::TextButton playPauseBtn{ juce::String::fromUTF8("\xE2\x96\xB6") };
@@ -83,21 +93,17 @@ private:
     juce::TextButton setBBtn{ "Set B" };
     juce::TextButton abLoopToggleBtn{ "A-B" };
 
-    juce::Slider progressSlider;
+
+    WaveformDisplay waveformDisplay; 
+
     juce::Slider volSlider;
     juce::Slider speedSlider;
 
     juce::Label fileLabel;
     juce::Label speedLabel;
-    juce::Label deckNameLabel; 
-
-  
-    juce::Label currentTimeLabel;
-    juce::Label totalTimeLabel;
-    juce::String formatTime(double seconds);
+    juce::Label deckNameLabel;
 
     juce::ComboBox marksMenu;
-
 
     // ----------------------------
 

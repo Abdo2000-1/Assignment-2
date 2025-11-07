@@ -47,7 +47,7 @@ void SessionManager::saveSession(const juce::String& fileId,
         }
     }
 
-    // Not found — create new session object
+    // Not found â€” create new session object
     juce::DynamicObject::Ptr newObj = new juce::DynamicObject();
     newObj->setProperty("fileId", fileId);
     newObj->setProperty("position", positionSeconds);
