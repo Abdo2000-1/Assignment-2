@@ -1,86 +1,67 @@
-﻿
-
 #include "WaveformDisplay.h"
 
-
 WaveformDisplay::WaveformDisplay(juce::AudioFormatManager& formatManager)
-    : thumbnailCache(std::make_unique<juce::AudioThumbnailCache>(5)), 
-    thumbnail(512, formatManager, *thumbnailCache) 
+    : thumbnailCache(5),
+    thumbnail(512, formatManager, thumbnailCache)
 {
     thumbnail.addChangeListener(this);
+    startTimer(30);
+
+   
+    setTheme(juce::Colour::fromRGB(40, 50, 90).brighter(0.2f), 
+        juce::Colours::cornflowerblue,                    // wave
+        juce::Colours::red.withAlpha(0.8f),               // cue
+        juce::Colours::white.withAlpha(0.7f));            // playhead
+   
 }
 
 WaveformDisplay::~WaveformDisplay()
 {
+    stopTimer();
     thumbnail.removeChangeListener(this);
 }
 
-void WaveformDisplay::addListener(Listener* l)
+void WaveformDisplay::loadFile(const juce::File& audioFile)
 {
-    listener = l;
+    clearCueMarker();
+    thumbnail.setSource(new juce::FileInputSource(audioFile));
 }
 
-void WaveformDisplay::loadFile(const juce::File& file)
+void WaveformDisplay::setTransportSource(juce::AudioTransportSource* transport)
 {
-    thumbnail.setSource(new juce::FileInputSource(file));
-}
-
-void WaveformDisplay::setPosition(double normalizedPosition)
-{
-    playheadPosition = normalizedPosition;
-    repaint();
+    transportSource = transport;
 }
 
 void WaveformDisplay::paint(juce::Graphics& g)
 {
-    // Background
-    g.fillAll(juce::Colour::fromRGB(40, 50, 90).brighter(0.2f));
+   
+    g.fillAll(bgColour);
 
-    // Waveform
-    if (thumbnail.isFullyLoaded())
+    
+    g.setColour(waveColour);
+    thumbnail.drawChannels(g, getLocalBounds(), 0.0, thumbnail.getTotalLength(), 1.0f);
+
+   
+    if (cuePointPosition > 0.0)
     {
-        g.setColour(juce::Colours::cornflowerblue);
-        thumbnail.drawChannels(g,
-            getLocalBounds(),
-            0.0,
-            thumbnail.getTotalLength(),
-            1.0f);
-    }
-    else
-    {
-        g.setColour(juce::Colours::lightsteelblue);
-        g.drawText("Loading waveform...", getLocalBounds(), juce::Justification::centred);
+        g.setColour(cueColour);
+        auto xPos = cuePointPosition * getWidth();
+        g.drawRect(xPos - 1, 0.0f, 2.0f, (float)getHeight());
     }
 
-    // Playhead
-    g.setColour(juce::Colours::whitesmoke.withAlpha(0.8f));
-    auto playheadX = (int)(playheadPosition * (double)getWidth());
-    g.drawVerticalLine(playheadX, 0.0f, (float)getHeight());
-
-    // Time labels
-    juce::String totalTimeStr = formatTime(thumbnail.getTotalLength());
-    juce::String currentTimeStr = formatTime(playheadPosition * thumbnail.getTotalLength());
-
-    g.setColour(juce::Colours::lightsteelblue);
-    g.setFont(12.0f);
-    g.drawText(currentTimeStr, getLocalBounds().reduced(4, 0), juce::Justification::centredLeft);
-    g.drawText(totalTimeStr, getLocalBounds().reduced(4, 0), juce::Justification::centredRight);
-
-    // Show time under mouse when dragging
-    if (isDragging)
+   
+    if (transportSource != nullptr && transportSource->getLengthInSeconds() > 0)
     {
-        juce::String mouseTimeStr = formatTime(currentMousePosSeconds);
-        auto mouseX = (int)(currentMousePosSeconds / thumbnail.getTotalLength() * getWidth());
-
-        g.setColour(juce::Colours::white);
-        g.drawVerticalLine(mouseX, 0.0f, (float)getHeight());
-        g.drawText(mouseTimeStr, mouseX + 5, 5, 50, 20, juce::Justification::centredLeft);
+        g.setColour(playheadColour);
+        auto xPosition = playheadPosition * getWidth();
+        g.drawRect(xPosition, 0.0f, 1.5f, (float)getHeight());
     }
+   
 }
 
 void WaveformDisplay::resized()
 {
-    // N/A
+   
 }
 
 void WaveformDisplay::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -91,33 +72,60 @@ void WaveformDisplay::changeListenerCallback(juce::ChangeBroadcaster* source)
     }
 }
 
+void WaveformDisplay::timerCallback()
+{
+    if (transportSource != nullptr && transportSource->getLengthInSeconds() > 0)
+    {
+        double newPos = transportSource->getCurrentPosition() / transportSource->getLengthInSeconds();
+        if (newPos != playheadPosition)
+        {
+            playheadPosition = newPos;
+            repaint();
+        }
+    }
+}
+
 void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 {
-    isDragging = true;
-    mouseDrag(e); // Handle click as a drag
+    if (onPositionChange)
+    {
+        double newPos = (double)e.getPosition().getX() / getWidth();
+        onPositionChange(newPos);
+    }
 }
 
 void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 {
-    if (listener != nullptr && thumbnail.isFullyLoaded())
+    if (onPositionChange)
     {
-        auto normalizedPos = juce::jlimit(0.0, 1.0, (double)e.position.x / (double)getWidth());
-        currentMousePosSeconds = normalizedPos * thumbnail.getTotalLength();
-        listener->waveformClicked(normalizedPos);
+        double newPos = (double)e.getPosition().getX() / getWidth();
+        newPos = juce::jlimit(0.0, 1.0, newPos);
+        onPositionChange(newPos);
+    }
+}
+
+void WaveformDisplay::setCueMarker(double normalizedPosition)
+{
+    cuePointPosition = normalizedPosition;
+    repaint();
+}
+
+void WaveformDisplay::clearCueMarker()
+{
+    if (cuePointPosition != 0.0)
+    {
+        cuePointPosition = 0.0;
         repaint();
     }
 }
 
-void WaveformDisplay::mouseUp(const juce::MouseEvent& e)
-{
-    isDragging = false;
-    repaint();
-}
 
-juce::String WaveformDisplay::formatTime(double seconds)
+void WaveformDisplay::setTheme(juce::Colour background, juce::Colour waveform, juce::Colour cueMarker, juce::Colour playhead)
 {
-    int totalSecs = static_cast<int>(std::round(seconds));
-    int mins = totalSecs / 60;
-    int secs = totalSecs % 60;
-    return juce::String::formatted("%02d:%02d", mins, secs);
+    bgColour = background;
+    waveColour = waveform;
+    cueColour = cueMarker;
+    playheadColour = playhead;
+
+    repaint();
 }

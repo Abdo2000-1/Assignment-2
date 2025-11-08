@@ -1,4 +1,4 @@
-#include "PlayerAudio.h"
+﻿#include "PlayerAudio.h"
 #include "PlayerGUI.h"
 
 //Last Edition
@@ -58,7 +58,6 @@ void PlayerAudio::loadFile(const juce::File& file)
 {
     if (auto* r = fmt.createReaderFor(file))
     {
-        m_file = file;
         player.stop();
         player.setSource(nullptr);
         reader.reset(new juce::AudioFormatReaderSource(r, true));
@@ -69,13 +68,21 @@ void PlayerAudio::loadFile(const juce::File& file)
         if (currentSampleRate > 0.0 && currentSamplesPerBlock > 0)
             resampler->prepareToPlay(currentSamplesPerBlock, currentSampleRate);
 
-        // Reset A-B points on new file load
         loopStartPointSeconds = 0.0;
         loopEndPointSeconds = 0.0;
         abLoopEnabled = false;
-
-        // store reader metadata (basic)
+        cuePointTime = 0.0;
         metadata = r->metadataValues;
+
+       
+        currentFile = file; 
+       
+    }
+    else
+    {
+       
+        currentFile = juce::File{}; 
+       
     }
 }
 
@@ -94,7 +101,7 @@ void PlayerAudio::pause()
 void PlayerAudio::stop()
 {
     player.stop();
-    player.setPosition(0); 
+    player.setPosition(0);
 }
 
 void PlayerAudio::skip(double skipSeconds) {
@@ -179,6 +186,13 @@ void PlayerAudio::setPositionNormalized(double normPos)
     player.setPosition(newPositionSeconds);
 }
 
+void PlayerAudio::setPosition(double seconds)
+{
+    
+    double clampedSeconds = juce::jlimit(0.0, player.getLengthInSeconds(), seconds);
+    player.setPosition(clampedSeconds);
+}
+
 void PlayerAudio::setLoopA()
 {
     loopStartPointSeconds = player.getCurrentPosition();
@@ -214,7 +228,24 @@ bool PlayerAudio::isABLooping() const
     return abLoopEnabled;
 }
 
+double PlayerAudio::setCuePoint()
+{
+    cuePointTime = player.getCurrentPosition();
+    return cuePointTime;
+}
+
+void PlayerAudio::goToCuePoint()
+{
+    player.setPosition(cuePointTime);
+}
+
 juce::AudioTransportSource& PlayerAudio::getTransportSource()
 {
     return player;
+}
+
+
+const juce::File& PlayerAudio::getCurrentFile() const
+{
+    return currentFile;
 }

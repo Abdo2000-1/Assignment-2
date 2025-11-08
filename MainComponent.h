@@ -1,11 +1,20 @@
-#pragma once
+﻿#pragma once
 
 #include <JuceHeader.h>
 #include "PlayerGUI.h"
 #include "PlayerAudio.h"
-#include "MarkManager.h"
-#include "SessionManager.h"
-#include "WaveformDisplay.h" // <-- ADDED
+
+namespace juce { class PropertiesFile; }
+
+struct AppTheme
+{
+    juce::Colour bg;
+    juce::Colour guiBg;
+    juce::Colour text;
+    juce::Colour accent;
+    juce::Colour accentDark;
+    juce::Colour playhead;
+};
 
 class MainComponent : public juce::AudioAppComponent,
     public PlayerGUI::Listener,
@@ -28,10 +37,8 @@ public:
     void playPauseButtonClicked(PlayerGUI* whichGui) override;
     void stopButtonClicked(PlayerGUI* whichGui) override;
     void muteButtonClicked(PlayerGUI* whichGui) override;
-    void markButtonClicked(PlayerGUI* whichGui) override;
     void skipButtonClicked(PlayerGUI* whichGui) override;
     void backButtonClicked(PlayerGUI* whichGui) override;
-    void marksMenuChanged(PlayerGUI* whichGui) override;
     void volumeSliderChanged(PlayerGUI* whichGui, float newValue) override;
     void speedSliderChanged(PlayerGUI* whichGui, float newValue) override;
     void loopButtonClicked(PlayerGUI* whichGui) override;
@@ -39,57 +46,22 @@ public:
     void setAButtonClicked(PlayerGUI* whichGui) override;
     void setBButtonClicked(PlayerGUI* whichGui) override;
     void abLoopToggleButtonClicked(PlayerGUI* whichGui) override;
-    void deleteMarkRequested(PlayerGUI* whichGui, int selectedID);
-
-    void updateMarksMenu(PlayerGUI* whichGui) {
-        PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
-        PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
-
-        juce::Array<double> marks = markManager.getMarks(std::to_string(player->getFile()->getFileIdentifier()));
-
-        juce::ComboBox* marksMenu = gui->getMarksMenu();
-        marksMenu->clear();
-
-        for (int i = 1; i <= marks.size(); i++)
-        {
-            marksMenu->addItem(juce::String(i) + " [" + juce::String(marks[i - 1]) + " ]", i);
-        }
-
-    }
+    void setCueButtonClicked(PlayerGUI* whichGui) override;
+    void cueButtonClicked(PlayerGUI* whichGui) override;
 
     // ===== Slider Listener Crossfader) =====
     void sliderValueChanged(juce::Slider* slider) override;
 
-    SessionManager* getSessionManager() {
-        return &sessionManager;
-    }
+    // ===== Session State =====
+    void saveSessionState(juce::PropertiesFile& props);
+    void loadSessionState(juce::PropertiesFile& props);
 
-    PlayerAudio* getPlayerAudio1() {
-        return &player1;
-    }
-
-    PlayerAudio* getPlayerAudio2() {
-        return &player2;
-    }
 
 private:
     PlayerGUI gui1;
     PlayerGUI gui2;
     PlayerAudio player1;
     PlayerAudio player2;
-
-    juce::File marksFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-        .getChildFile("marks.json");
-
-    juce::File sessionFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-        .getChildFile("session.json");
-
-    MarkManager markManager{ marksFile };
-    SessionManager sessionManager{ sessionFile };
-
-    // ADDED THESE TWO:
-    juce::AudioFormatManager formatManager;
-    juce::AudioThumbnailCache thumbnailCache{ 5 };
 
     juce::MixerAudioSource mixer;
 
@@ -113,6 +85,7 @@ private:
     std::unique_ptr<juce::FileChooser> chooser;
     void updateLoopButtonText(PlayerGUI& gui, PlayerAudio& player);
 
+    
 
     juce::ListBox playlistBox;
     juce::TextButton addButton{ "Add" };
@@ -129,6 +102,11 @@ private:
     void addFileToPlaylist();
     void deleteSelectedItem();
     void clearPlaylist();
+
+    juce::TextButton themeToggleButton;
+    bool isDarkMode = true;
+    AppTheme currentTheme;
+    void updateTheme();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };

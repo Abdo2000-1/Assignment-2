@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
-//Last Edition
+//Last Edition//////////////////////////////
 
 class PlayerAudio : public juce::AudioSource
 {
@@ -31,8 +31,12 @@ public:
     void toggleLoop();
     bool isLooping() const;
 
-    // --- Task 1: Seeking ---
+    
     void setPositionNormalized(double normPos);
+
+   
+    void setPosition(double seconds);
+ 
 
     // --- Task 2: A-B Loop ---
     void setLoopA();
@@ -40,13 +44,18 @@ public:
     void toggleABLoop();
     bool isABLooping() const;
 
+    // --- Task 3: Cue Points ---
+    double setCuePoint();
+    void goToCuePoint();
+
     juce::AudioTransportSource& getTransportSource();
 
-    // Metadata getter (from reader or external)
     const juce::StringPairArray& getMetadata() const { return metadata; }
+    juce::AudioFormatManager& getFormatManager() { return fmt; }
 
-
-    juce::File* getFile() { return &m_file; }
+   
+    const juce::File& getCurrentFile() const; 
+   
 
 private:
     juce::AudioFormatManager fmt;
@@ -54,22 +63,19 @@ private:
     juce::AudioTransportSource player;
     std::unique_ptr<juce::ResamplingAudioSource> resampler;
 
-    juce::File m_file;
+    
+    juce::File currentFile;
+
 
     bool mutedState{ false };
-
     float volumeBeforeMute{ 0.5f };
-
     bool loopEnabled{ false };
-
-    // --- A-B Loop State ---
     bool abLoopEnabled{ false };
     double loopStartPointSeconds{ 0.0 };
     double loopEndPointSeconds{ 0.0 };
-
+    double cuePointTime{ 0.0 };
     int currentSamplesPerBlock{ 0 };
     double currentSampleRate{ 0.0 };
-
     juce::StringPairArray metadata;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PlayerAudio)

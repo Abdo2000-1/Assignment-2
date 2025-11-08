@@ -1,52 +1,49 @@
-﻿
-
 #pragma once
-
 #include <JuceHeader.h>
 
 class WaveformDisplay : public juce::Component,
-    public juce::ChangeListener
+    public juce::ChangeListener,
+    private juce::Timer
 {
 public:
-    // --- Listener for seek events ---
-    class Listener
-    {
-    public:
-        virtual ~Listener() = default;
-        virtual void waveformClicked(double normalizedPosition) = 0;
-    };
-
     WaveformDisplay(juce::AudioFormatManager& formatManager);
     ~WaveformDisplay() override;
 
     void paint(juce::Graphics&) override;
     void resized() override;
-
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
-    // --- Mouse events for seeking ---
+    void loadFile(const juce::File& audioFile);
+    void setTransportSource(juce::AudioTransportSource* transport);
+
     void mouseDown(const juce::MouseEvent& e) override;
     void mouseDrag(const juce::MouseEvent& e) override;
-    void mouseUp(const juce::MouseEvent& e) override;
 
-    // --- Public methods ---
-    void addListener(Listener* l);
-    void loadFile(const juce::File& file);
-    void setPosition(double normalizedPosition);
+    std::function<void(double)> onPositionChange;
 
-private:
-    Listener* listener{ nullptr };
+    void setCueMarker(double normalizedPosition);
+    void clearCueMarker();
 
     
-    std::unique_ptr<juce::AudioThumbnailCache> thumbnailCache;
+    void setTheme(juce::Colour background, juce::Colour waveform, juce::Colour cueMarker, juce::Colour playhead);
    
+
+private:
+    void timerCallback() override;
+
+    juce::AudioThumbnailCache thumbnailCache;
     juce::AudioThumbnail thumbnail;
 
-    double playheadPosition{ 0.0 };
+    juce::AudioTransportSource* transportSource{ nullptr };
+    double playheadPosition = 0.0; // 0.0 to 1.0
+    double cuePointPosition = 0.0; // 0.0 to 1.0
 
-    juce::String formatTime(double seconds);
-    double currentMousePosSeconds{ 0.0 };
-    bool isDragging{ false };
+   
+    juce::Colour bgColour;
+    juce::Colour waveColour;
+    juce::Colour cueColour;
+    juce::Colour playheadColour;
+    
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WaveformDisplay)
 };

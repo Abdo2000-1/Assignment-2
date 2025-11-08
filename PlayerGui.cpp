@@ -1,67 +1,67 @@
 ﻿#include "PlayerGUI.h"
 #include "PlayerAudio.h"
 
-//Last Edition
-
-PlayerGUI::PlayerGUI() : waveformDisplay(formatManager) 
+juce::String PlayerGUI::formatTime(double seconds)
 {
-    // Register basic formats for the waveform thumbnail
-    formatManager.registerBasicFormats();
+    int totalSecs = static_cast<int>(std::round(seconds));
+    int mins = totalSecs / 60;
+    int secs = totalSecs % 60;
+    return juce::String::formatted("%02d:%02d", mins, secs);
+}
 
-    juce::Colour backgroundColour = juce::Colour::fromRGB(40, 50, 90);
-    juce::Colour trackColour = juce::Colours::cornflowerblue;
-    juce::Colour thumbColour = juce::Colours::white;
-    juce::Colour textColour = juce::Colours::lightsteelblue;
-
+PlayerGUI::PlayerGUI(juce::AudioFormatManager& formatManager)
+    : waveformDisplay(formatManager)
+{
+    bgColour = juce::Colour::fromRGB(40, 50, 90);
+    textColour = juce::Colours::lightsteelblue;
+    accentColour = juce::Colours::cornflowerblue;
 
     addAndMakeVisible(loadBtn);
     addAndMakeVisible(playPauseBtn);
     addAndMakeVisible(stopBtn);
     addAndMakeVisible(skipBtn);
-    addAndMakeVisible(markBtn);
     addAndMakeVisible(backBtn);
     addAndMakeVisible(muteBtn);
     addAndMakeVisible(loopBtn);
     addAndMakeVisible(volSlider);
     addAndMakeVisible(speedSlider);
-    addAndMakeVisible(waveformDisplay); 
-    addAndMakeVisible(fileLabel);
-    addAndMakeVisible(speedLabel);
-    addAndMakeVisible(deleteMarkBtn);
-    deleteMarkBtn.onClick = [this] { deleteMarkBtnClicked(this); };
+    addAndMakeVisible(progressSlider);
+    addAndMakeVisible(waveformDisplay);
 
-
-
-
-    addAndMakeVisible(marksMenu);
-    marksMenu.setSelectedId(0);
-
-    marksMenu.onChange = [this]
-        {
-            if (listener != nullptr)
-                listener->marksMenuChanged(this);
-        };
-
+    addAndMakeVisible(titleLabel);
+    addAndMakeVisible(artistLabel);
+    addAndMakeVisible(durationLabel);
 
     addAndMakeVisible(setABtn);
     addAndMakeVisible(setBBtn);
     addAndMakeVisible(abLoopToggleBtn);
     abLoopToggleBtn.setButtonText("A-B");
-
+    addAndMakeVisible(setButton);
+    addAndMakeVisible(cueButton);
+    addAndMakeVisible(currentTimeLabel);
+    addAndMakeVisible(totalTimeLabel);
     addAndMakeVisible(deckNameLabel);
+
+    addAndMakeVisible(volLabel);
+    addAndMakeVisible(speedLabel);
 
     volSlider.setRange(0.0, 1.0, 0.01);
     volSlider.setValue(0.5);
+    volSlider.setSliderStyle(juce::Slider::LinearVertical);
     volSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
     speedSlider.setRange(0.5, 2.0, 0.01);
     speedSlider.setValue(1.0);
+    speedSlider.setSliderStyle(juce::Slider::LinearVertical);
     speedSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 
+    progressSlider.setRange(0.0, 1.0);
+    progressSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    progressSlider.setSliderStyle(juce::Slider::LinearBar);
 
-    waveformDisplay.addListener(this);
-    // -----------------
-
+    progressSlider.setColour(juce::Slider::backgroundColourId, bgColour.brighter(0.2f));
+    progressSlider.setColour(juce::Slider::trackColourId, accentColour);
+    progressSlider.setColour(juce::Slider::thumbColourId, textColour);
 
     startTimer(30);
 
@@ -69,56 +69,67 @@ PlayerGUI::PlayerGUI() : waveformDisplay(formatManager)
     playPauseBtn.addListener(this);
     stopBtn.addListener(this);
     muteBtn.addListener(this);
-    markBtn.addListener(this);
     volSlider.addListener(this);
     speedSlider.addListener(this);
     backBtn.addListener(this);
     skipBtn.addListener(this);
     loopBtn.addListener(this);
+    progressSlider.addListener(this);
+
+    waveformDisplay.onPositionChange = [this](double newValue)
+        {
+            if (listener)
+                listener->progressSliderChanged(this, newValue);
+        };
 
     setABtn.addListener(this);
     setBBtn.addListener(this);
     abLoopToggleBtn.addListener(this);
+    setButton.addListener(this);
+    cueButton.addListener(this);
 
-    fileLabel.setColour(juce::Label::textColourId, textColour);
-    fileLabel.setText("No file loaded", juce::dontSendNotification);
+    titleLabel.setColour(juce::Label::textColourId, textColour);
+    titleLabel.setFont(juce::Font(16.0f, juce::Font::bold));
+    titleLabel.setText("Title: N/A", juce::dontSendNotification);
 
-    speedLabel.setColour(juce::Label::textColourId, textColour.withAlpha(0.7f));
-    speedLabel.setText("1.00x", juce::dontSendNotification);
-    speedLabel.setJustificationType(juce::Justification::centred);
+    artistLabel.setColour(juce::Label::textColourId, textColour);
+    artistLabel.setFont(juce::Font(14.0f));
+    artistLabel.setText("Artist: N/A", juce::dontSendNotification);
+
+    durationLabel.setColour(juce::Label::textColourId, textColour.withAlpha(0.7f));
+    durationLabel.setFont(juce::Font(14.0f));
+    durationLabel.setText("Duration: 00:00", juce::dontSendNotification);
+
+    currentTimeLabel.setColour(juce::Label::textColourId, textColour);
+    currentTimeLabel.setText("00:00", juce::dontSendNotification);
+    currentTimeLabel.setJustificationType(juce::Justification::centredLeft);
+
+    totalTimeLabel.setColour(juce::Label::textColourId, textColour);
+    totalTimeLabel.setText("00:00", juce::dontSendNotification);
+    totalTimeLabel.setJustificationType(juce::Justification::centredRight);
 
     deckNameLabel.setColour(juce::Label::textColourId, textColour);
     deckNameLabel.setFont(juce::Font(18.0f, juce::Font::bold));
     deckNameLabel.setJustificationType(juce::Justification::centred);
-}
 
-void PlayerGUI::deleteMarkBtnClicked(PlayerGUI* whichGui)
-{
-    int selectedID = marksMenu.getSelectedId();
-    if (selectedID > 0)
-    {
-        if (listener != nullptr)
-            listener->deleteMarkRequested(this, selectedID);
-    }
+    volLabel.setText("Volume", juce::dontSendNotification);
+    volLabel.setFont(juce::Font(12.0f));
+    volLabel.setJustificationType(juce::Justification::centred);
+
+    speedLabel.setText("Speed", juce::dontSendNotification);
+    speedLabel.setFont(juce::Font(12.0f));
+    speedLabel.setJustificationType(juce::Justification::centred);
 }
 
 void PlayerGUI::setPlayerAudioSource(PlayerAudio& audioSource)
 {
     playerAudioSource = &audioSource;
+    waveformDisplay.setTransportSource(&audioSource.getTransportSource());
 }
 
-
-void PlayerGUI::loadFileForWaveform(const juce::File& file)
+void PlayerGUI::loadFileForThumbnail(const juce::File& file)
 {
     waveformDisplay.loadFile(file);
-}
-
-
-void PlayerGUI::waveformClicked(double normalizedPosition)
-{
-    // Pass the seek event to MainComponent
-    if (listener)
-        listener->progressSliderChanged(this, normalizedPosition);
 }
 
 void PlayerGUI::timerCallback()
@@ -130,16 +141,19 @@ void PlayerGUI::timerCallback()
 
         if (totalLength > 0.0)
         {
-           
-            double normalizedPosition = currentTime / totalLength;
-            waveformDisplay.setPosition(normalizedPosition);
-            // ------------------
+            if (!progressSlider.isMouseButtonDown())
+            {
+                progressSlider.setValue(currentTime / totalLength, juce::dontSendNotification);
+            }
+
+            currentTimeLabel.setText(formatTime(currentTime), juce::dontSendNotification);
+            totalTimeLabel.setText(formatTime(totalLength), juce::dontSendNotification);
         }
         else
         {
-            
-            waveformDisplay.setPosition(0.0);
-            // ------------------
+            progressSlider.setValue(0.0, juce::dontSendNotification);
+            currentTimeLabel.setText("00:00", juce::dontSendNotification);
+            totalTimeLabel.setText("00:00", juce::dontSendNotification);
         }
     }
 }
@@ -155,50 +169,61 @@ void PlayerGUI::resized()
 
     int gap = 8;
     int tinyGap = 4;
-    float rowHeight = bounds.getHeight() * 0.15f;
-    rowHeight = juce::jlimit(25.0f, 40.0f, rowHeight);
+    int timeLabelWidth = 50;
+    int controlsAreaWidth = 40;
+    int labelHeight = 20;
+
+    auto controlsArea = bounds.removeFromRight(controlsAreaWidth);
+    bounds.removeFromRight(gap);
+
+    muteBtn.setBounds(controlsArea.removeFromTop(35).reduced(5));
+    controlsArea.removeFromTop(gap);
+
+    auto volArea = controlsArea.removeFromTop(controlsArea.getHeight() * 0.5f);
+    auto speedArea = controlsArea;
+    speedArea.removeFromTop(gap);
+
+    volLabel.setBounds(volArea.removeFromTop(labelHeight));
+    volSlider.setBounds(volArea.reduced(5, 0));
+
+    speedLabel.setBounds(speedArea.removeFromTop(labelHeight));
+    speedSlider.setBounds(speedArea.reduced(5, 0));
 
 
-    deckNameLabel.setBounds(bounds.removeFromTop(rowHeight * 0.8f));
+    float totalRowHeight = bounds.getHeight() - (4 * gap);
+
+    float nameRowH = totalRowHeight * 0.12f;
+    float metaRowH = totalRowHeight * 0.14f;
+    float progressRowH = totalRowHeight * 0.24f;
+    float transportRowH = totalRowHeight * 0.25f;
+    float abLoopRowH = totalRowHeight * 0.25f;
+
+
+    deckNameLabel.setBounds(bounds.removeFromTop(nameRowH));
     bounds.removeFromTop(gap);
 
-
-    auto topRow = bounds.removeFromTop(rowHeight);
-    loadBtn.setBounds(topRow.removeFromLeft(topRow.getWidth() * 0.2f));
+    auto topRow = bounds.removeFromTop(metaRowH);
+    loadBtn.setBounds(topRow.removeFromLeft(topRow.getWidth() * 0.25f));
     topRow.removeFromLeft(gap);
-    fileLabel.setBounds(topRow);
+    titleLabel.setBounds(topRow.removeFromTop(topRow.getHeight() * 0.4f));
+    artistLabel.setBounds(topRow.removeFromTop(topRow.getHeight() * 0.5f));
+    durationLabel.setBounds(topRow);
 
     bounds.removeFromTop(gap);
 
-    
-    auto progressRow = bounds.removeFromTop(rowHeight * 0.8f);
-    waveformDisplay.setBounds(progressRow);
-    // -----------------
+    auto progressRowArea = bounds.removeFromTop(progressRowH);
+    currentTimeLabel.setBounds(progressRowArea.removeFromLeft(timeLabelWidth));
+    totalTimeLabel.setBounds(progressRowArea.removeFromRight(timeLabelWidth));
+    progressRowArea.reduce(tinyGap, 0);
+    waveformDisplay.setBounds(progressRowArea.removeFromTop(progressRowArea.getHeight() * 0.6f));
+    progressRowArea.removeFromTop(tinyGap / 2);
+    progressSlider.setBounds(progressRowArea);
 
     bounds.removeFromTop(gap);
 
-
-    auto transportRow = bounds.removeFromTop(rowHeight * 1.2f);
-
-    int transportBtnCount = 5;
-    float singleBtnWidth = (transportRow.getWidth() - (gap * (transportBtnCount - 1))) / (float)transportBtnCount;
-
-    const int markBtnWidth = (int)(singleBtnWidth * 0.5f);
-    const int marksMenuWidth = (int)(singleBtnWidth * 1.5f);
-    const int deleteBtnWidth = (int)(singleBtnWidth * 0.5f);
-
-    marksMenu.setBounds(transportRow.removeFromLeft(marksMenuWidth));
-    transportRow.removeFromLeft(tinyGap);
-
-    deleteMarkBtn.setBounds(transportRow.removeFromLeft(deleteBtnWidth));
-    transportRow.removeFromLeft(tinyGap);
-
-    markBtn.setBounds(transportRow.removeFromLeft(markBtnWidth));
-    transportRow.removeFromLeft(gap);
-
-    transportBtnCount = 5;
-    float btnWidth = (transportRow.getWidth() - (gap * (transportBtnCount - 1))) / (float)transportBtnCount;
-
+    auto transportRow = bounds.removeFromTop(transportRowH);
+    int btnCount = 5;
+    float btnWidth = (transportRow.getWidth() - (gap * (btnCount - 1))) / (float)btnCount;
 
     backBtn.setBounds(transportRow.removeFromLeft(btnWidth));
     transportRow.removeFromLeft(gap);
@@ -212,38 +237,25 @@ void PlayerGUI::resized()
 
     bounds.removeFromTop(gap);
 
-
-    auto abRow = bounds.removeFromTop(rowHeight);
-    int btnCount = 3;
+    auto abRow = bounds.removeFromTop(abLoopRowH);
+    btnCount = 5;
     btnWidth = (abRow.getWidth() - (gap * (btnCount - 1))) / (float)btnCount;
+
     setABtn.setBounds(abRow.removeFromLeft(btnWidth));
     abRow.removeFromLeft(gap);
     setBBtn.setBounds(abRow.removeFromLeft(btnWidth));
     abRow.removeFromLeft(gap);
-    abLoopToggleBtn.setBounds(abRow);
-
-    bounds.removeFromTop(gap);
-
-
-    auto sliderRow = bounds;
-    auto volArea = sliderRow.removeFromLeft(sliderRow.getWidth() * 0.48f);
-    auto speedArea = sliderRow.removeFromRight(sliderRow.getWidth() * 0.96f);
-
-    muteBtn.setBounds(volArea.removeFromRight(volArea.getWidth() * 0.2f));
-    volArea.removeFromRight(tinyGap);
-    volSlider.setBounds(volArea);
-
-    speedLabel.setBounds(speedArea.removeFromRight(speedArea.getWidth() * 0.2f));
-    speedArea.removeFromRight(tinyGap);
-    speedSlider.setBounds(speedArea);
+    abLoopToggleBtn.setBounds(abRow.removeFromLeft(btnWidth));
+    abRow.removeFromLeft(gap);
+    setButton.setBounds(abRow.removeFromLeft(btnWidth));
+    abRow.removeFromLeft(gap);
+    cueButton.setBounds(abRow);
 }
 
 void PlayerGUI::paint(juce::Graphics& g)
 {
-
-    g.fillAll(juce::Colour::fromRGB(40, 50, 90));
-
-    g.setColour(juce::Colours::lightsteelblue.withAlpha(0.2f));
+    g.fillAll(bgColour);
+    g.setColour(textColour.withAlpha(0.2f));
     g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(2.0f), 5.0f, 2.0f);
 }
 
@@ -253,14 +265,20 @@ void PlayerGUI::sliderValueChanged(juce::Slider* slider)
         listener->volumeSliderChanged(this, (float)slider->getValue());
     else if (listener && slider == &speedSlider)
     {
-        speedLabel.setText(juce::String(slider->getValue(), 2) + "x", juce::dontSendNotification);
         listener->speedSliderChanged(this, (float)slider->getValue());
+    }
+    else if (listener && slider == &progressSlider)
+    {
+        if (slider->isMouseButtonDown())
+            listener->progressSliderChanged(this, slider->getValue());
     }
 }
 
-void PlayerGUI::setFileName(const juce::String& name)
+void PlayerGUI::setMetadata(const juce::String& title, const juce::String& artist, const juce::String& duration)
 {
-    fileLabel.setText(name, juce::dontSendNotification);
+    titleLabel.setText(title, juce::dontSendNotification);
+    artistLabel.setText(artist, juce::dontSendNotification);
+    durationLabel.setText(duration, juce::dontSendNotification);
 }
 
 void PlayerGUI::setDeckName(const juce::String& name)
@@ -272,7 +290,7 @@ void PlayerGUI::setMuteButtonText(const juce::String& text)
 {
     muteBtn.setButtonText(text);
 }
-
+    
 void PlayerGUI::setPlayButtonText(const juce::String& text)
 {
     playPauseBtn.setButtonText(text);
@@ -288,11 +306,46 @@ void PlayerGUI::setABLoopButtonText(const juce::String& text)
     abLoopToggleBtn.setButtonText(text);
 }
 
+void PlayerGUI::setCueMarker(double normalizedPosition)
+{
+    waveformDisplay.setCueMarker(normalizedPosition);
+}
+
+void PlayerGUI::setProgress(double normalizedPosition)
+{
+    progressSlider.setValue(normalizedPosition, juce::dontSendNotification);
+}
+
+void PlayerGUI::setTheme(juce::Colour bg, juce::Colour text, juce::Colour accent, juce::Colour playhead)
+{
+    bgColour = bg;
+    textColour = text;
+    accentColour = accent;
+
+    waveformDisplay.setTheme(bgColour.brighter(0.2f), accentColour, juce::Colours::red.withAlpha(0.8f), playhead);
+
+    progressSlider.setColour(juce::Slider::backgroundColourId, bgColour.brighter(0.2f));
+    progressSlider.setColour(juce::Slider::trackColourId, accentColour);
+    progressSlider.setColour(juce::Slider::thumbColourId, textColour);
+
+    titleLabel.setColour(juce::Label::textColourId, textColour);
+    artistLabel.setColour(juce::Label::textColourId, textColour);
+    durationLabel.setColour(juce::Label::textColourId, textColour.withAlpha(0.7f));
+
+    currentTimeLabel.setColour(juce::Label::textColourId, textColour);
+    totalTimeLabel.setColour(juce::Label::textColourId, textColour);
+    deckNameLabel.setColour(juce::Label::textColourId, textColour);
+
+    volLabel.setColour(juce::Label::textColourId, textColour.withAlpha(0.7f));
+    speedLabel.setColour(juce::Label::textColourId, textColour.withAlpha(0.7f));
+
+    repaint();
+}
+
 void PlayerGUI::buttonClicked(juce::Button* button)
 {
     if (listener == nullptr)
         return;
-
 
     if (button == &loadBtn)
         listener->loadButtonClicked(this);
@@ -312,8 +365,10 @@ void PlayerGUI::buttonClicked(juce::Button* button)
         listener->setAButtonClicked(this);
     else if (button == &setBBtn)
         listener->setBButtonClicked(this);
-    else if (button == &markBtn)
-        listener->markButtonClicked(this);
     else if (button == &abLoopToggleBtn)
         listener->abLoopToggleButtonClicked(this);
+    else if (button == &setButton)
+        listener->setCueButtonClicked(this);
+    else if (button == &cueButton)
+        listener->cueButtonClicked(this);
 }

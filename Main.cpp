@@ -1,6 +1,6 @@
-#include <JuceHeader.h>
+﻿#include <JuceHeader.h>
 #include "MainComponent.h"
-using namespace std;///////////////////////Last Edit \\\\\\\\\\\\\\\\\\\
+using namespace std;//Al Ahly Audio Player Version 2.0 //////
 
 class SimpleAudioPlayer : public juce::JUCEApplication
 {
@@ -10,65 +10,89 @@ public:
 
     void initialise(const juce::String&) override
     {
-        mainWindow = std::make_unique<MainWindow>(getApplicationName());
         
-        MainComponent* mainComp = mainWindow->getMainComponent();
+        juce::PropertiesFile::Options options;
+        options.applicationName = getApplicationName();
+        options.filenameSuffix = ".properties";
+        options.folderName = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+            .getChildFile(getApplicationName()).getFullPathName();
 
-        auto* session = mainComp->getSessionManager();
+       
+        juce::File(options.folderName).createDirectory();
 
-        juce::uint64 uid1 = mainComp->getPlayerAudio1()->getFile()->getFileIdentifier();
-        juce::String fileID1 = std::to_string(uid1);
 
-        juce::uint64 uid2 = mainComp->getPlayerAudio2()->getFile()->getFileIdentifier();
-        juce::String fileID2 = std::to_string(uid2);
+        propsFile = std::make_unique<juce::PropertiesFile>(options);
 
-        session->saveSession(fileID1, mainComp->getPlayerAudio1()->getCurrentPosition());
+       
+        mainWindow = std::make_unique<MainWindow>(getApplicationName(), *propsFile);
+        
     }
 
     void shutdown() override
     {
+       
+        if (mainWindow != nullptr)
+        {
+            if (auto* mainComp = mainWindow->getMainComponent())
+            {
+                mainComp->saveSessionState(*propsFile);
+            }
+        }
+
+      
+        propsFile->saveIfNeeded();
+        
+
         mainWindow = nullptr;
+        propsFile = nullptr; 
     }
 
 private:
     class MainWindow : public juce::DocumentWindow
     {
     public:
-        MainWindow(juce::String name)
+        
+        MainWindow(juce::String name, juce::PropertiesFile& props) 
             : DocumentWindow(name,
-                juce::Colour::fromRGB(30, 35, 50), 
+                juce::Colour::fromRGB(30, 35, 50),
                 DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
+
+            
             mainComponent = new MainComponent();
             setContentOwned(mainComponent, true);
-           
+
+            
+            mainComponent->loadSessionState(props);
+            
+
             setResizable(true, true);
-            setResizeLimits(500, 700, 1200, 2000); 
-            centreWithSize(500, 400); 
-          
+            setResizeLimits(500, 700, 1200, 2000);
+            centreWithSize(500, 400);
 
             setVisible(true);
         }
 
         void closeButtonPressed() override
         {
-            
-            auto* session = mainComponent->getSessionManager();
-
-
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
 
-        MainComponent* getMainComponent() const
-        {
-            return mainComponent;
-        }
+        MainComponent* getMainComponent() { return mainComponent; }
+        
+
     private:
-        MainComponent* mainComponent = nullptr;
+       
+        MainComponent* mainComponent; 
+     
     };
 
     std::unique_ptr<MainWindow> mainWindow;
+
+    
+    std::unique_ptr<juce::PropertiesFile> propsFile;
+    
 };
 
 START_JUCE_APPLICATION(SimpleAudioPlayer)

@@ -1,9 +1,42 @@
 #include "MainComponent.h"
-#include <string> 
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+
 using namespace std;
 
-MainComponent::MainComponent()
+namespace
 {
+    const AppTheme getDarkTheme()
+    {
+        return {
+            juce::Colour::fromRGB(30, 35, 50),     // bg
+            juce::Colour::fromRGB(40, 50, 90),     // guiBg
+            juce::Colours::lightsteelblue,         // text
+            juce::Colours::cornflowerblue,         // accent
+            juce::Colours::cornflowerblue.darker(0.5f), // accentDark
+            juce::Colours::white.withAlpha(0.7f)   // playhead
+        };
+    }
+
+    const AppTheme getLightTheme()
+    {
+        return {
+            juce::Colour::fromRGB(230, 230, 230),  // bg
+            juce::Colour::fromRGB(255, 255, 255),  // guiBg
+            juce::Colours::black,                  // text
+            juce::Colour::fromRGB(0, 80, 200),     // accent
+            juce::Colour::fromRGB(0, 60, 150),     // accentDark
+            juce::Colours::black.withAlpha(0.7f)   // playhead
+        };
+    }
+}
+
+
+MainComponent::MainComponent()
+    : gui1(player1.getFormatManager()),
+    gui2(player2.getFormatManager())
+{
+
     addAndMakeVisible(gui1);
     addAndMakeVisible(gui2);
     gui1.addListener(this);
@@ -24,7 +57,6 @@ MainComponent::MainComponent()
             mixModeButton.setButtonText(isInMixMode ? "Mix Mode: ON" : "Mix Mode: OFF");
             if (!isInMixMode)
             {
-
                 if (player1.isPlaying()) player2.pause();
                 if (player2.isPlaying()) player1.pause();
             }
@@ -38,19 +70,13 @@ MainComponent::MainComponent()
     crossfader.addListener(this);
 
     addAndMakeVisible(crossfaderLabel);
-    crossfaderLabel.setText("Crossfader", juce::dontSendNotification);
     crossfaderLabel.setJustificationType(juce::Justification::centred);
-    crossfaderLabel.setColour(juce::Label::textColourId, juce::Colours::lightsteelblue);
 
     addAndMakeVisible(deck1Label);
-    deck1Label.setText("P1", juce::dontSendNotification);
     deck1Label.setJustificationType(juce::Justification::centredLeft);
-    deck1Label.setColour(juce::Label::textColourId, juce::Colours::lightsteelblue);
 
     addAndMakeVisible(deck2Label);
-    deck2Label.setText("P2", juce::dontSendNotification);
     deck2Label.setJustificationType(juce::Justification::centredRight);
-    deck2Label.setColour(juce::Label::textColourId, juce::Colours::lightsteelblue);
 
     addAndMakeVisible(playlistBox);
     playlistBox.setModel(this);
@@ -58,10 +84,6 @@ MainComponent::MainComponent()
     addAndMakeVisible(addButton);
     addButton.setButtonText("+");
     addButton.onClick = [this] { addFileToPlaylist(); };
-
-
-    setSize(400, 200);
-
 
     addAndMakeVisible(deleteButton);
     deleteButton.setButtonText("Delete");
@@ -71,9 +93,14 @@ MainComponent::MainComponent()
     clearButton.setButtonText("Clear");
     clearButton.onClick = [this] { clearPlaylist(); };
 
-
-
     deleteButton.setEnabled(false);
+
+    addAndMakeVisible(themeToggleButton);
+    themeToggleButton.onClick = [this]
+        {
+            isDarkMode = !isDarkMode;
+            updateTheme();
+        };
 
     setSize(700, 800);
     setAudioChannels(0, 2);
@@ -82,6 +109,8 @@ MainComponent::MainComponent()
     updateGains();
     updateLoopButtonText(gui1, player1);
     updateLoopButtonText(gui2, player2);
+
+    updateTheme();
 }
 
 MainComponent::~MainComponent()
@@ -89,6 +118,23 @@ MainComponent::~MainComponent()
     shutdownAudio();
 }
 
+void MainComponent::updateTheme()
+{
+    currentTheme = isDarkMode ? getDarkTheme() : getLightTheme();
+    themeToggleButton.setButtonText(isDarkMode ? "Light Mode" : "Dark Mode");
+
+    gui1.setTheme(currentTheme.guiBg, currentTheme.text, currentTheme.accent, currentTheme.playhead);
+    gui2.setTheme(currentTheme.guiBg, currentTheme.text, currentTheme.accent, currentTheme.playhead);
+
+    crossfaderLabel.setColour(juce::Label::textColourId, currentTheme.text);
+    deck1Label.setColour(juce::Label::textColourId, currentTheme.text);
+    deck2Label.setColour(juce::Label::textColourId, currentTheme.text);
+
+    playlistBox.setColour(juce::ListBox::backgroundColourId, currentTheme.guiBg);
+    playlistBox.updateContent();
+
+    repaint();
+}
 
 
 void MainComponent::updateLoopButtonText(PlayerGUI& gui, PlayerAudio& player)
@@ -106,6 +152,8 @@ void MainComponent::updateLoopButtonText(PlayerGUI& gui, PlayerAudio& player)
         gui.setABLoopButtonText("A-B");
 }
 
+
+
 // ================= PLAYLIST METHODS =================
 
 int MainComponent::getNumRows()
@@ -119,11 +167,12 @@ void MainComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int width
         return;
 
     if (rowIsSelected)
-        g.fillAll(juce::Colours::cornflowerblue.darker(0.5f));
+        g.fillAll(currentTheme.accentDark);
     else
-        g.fillAll(juce::Colour::fromRGB(40, 50, 90));
+        g.fillAll(currentTheme.guiBg);
 
-    g.setColour(juce::Colours::lightsteelblue);
+    g.setColour(currentTheme.text);
+
     g.drawText(playlistFiles[rowNumber], 4, 0, width - 4, height, juce::Justification::centredLeft);
 }
 
@@ -132,30 +181,33 @@ void MainComponent::listBoxItemClicked(int row, const juce::MouseEvent&)
 
     if (row >= 0 && row < playlistFileObjects.size())
     {
-        auto file = playlistFileObjects[row]; 
+        player1.loadFile(playlistFileObjects[row]);
+        gui1.loadFileForThumbnail(playlistFileObjects[row]);
 
-        player1.loadFile(file); 
-        if (!isInMixMode) player2.pause();
-        player1.play();
-
-        
+        // ++++++++++ التعديل هنا ++++++++++
         auto metadata = player1.getMetadata();
         juce::String title = metadata["TITLE"];
         juce::String artist = metadata["ARTIST"];
-        if (title.isEmpty()) title = file.getFileName();
 
-        juce::String displayTitle = title;
-        if (artist.isNotEmpty()) displayTitle += " - " + artist;
+        if (title.isEmpty())
+            title = playlistFileObjects[row].getFileName();
+        if (artist.isEmpty())
+            artist = "Unknown Artist";
 
-        gui1.setFileName(displayTitle);
-        // -------------------------------
+        double durationSecs = player1.getLengthInSeconds();
+        int totalSecs = static_cast<int>(std::round(durationSecs));
+        int mins = totalSecs / 60;
+        int secs = totalSecs % 60;
+        juce::String durationStr = juce::String::formatted("Duration: %02d:%02d", mins, secs);
 
-        gui1.setDeckName(file.getFileName());
+        gui1.setMetadata("Title: " + title, "Artist: " + artist, durationStr);
+        // ++++++++++++++++++++++++++++++++
+
+        if (!isInMixMode) player2.pause();
+        player1.play();
+
         gui1.setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
         gui2.setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-
-        
-        gui1.loadFileForWaveform(file);
     }
 
     deleteButton.setEnabled(row >= 0);
@@ -164,7 +216,7 @@ void MainComponent::listBoxItemClicked(int row, const juce::MouseEvent&)
 void MainComponent::addFileToPlaylist()
 {
     chooser = std::make_unique<juce::FileChooser>(
-        "Add an audio file...", juce::File{}, "*.wav;*.mp3");
+        "Add an audio file...", juce::File{}, "*.wav;*.mp3;*.flac;*.ogg");
 
     chooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
         [this](const juce::FileChooser& fc)
@@ -209,7 +261,7 @@ void MainComponent::clearPlaylist()
 void MainComponent::loadButtonClicked(PlayerGUI* whichGui)
 {
     chooser = std::make_unique<juce::FileChooser>(
-        "Select an audio file...", juce::File{}, "*.wav;*.mp3");
+        "Select an audio file...", juce::File{}, "*.wav;*.mp3;*.flac;*.ogg");
 
     chooser->launchAsync(
         juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -224,29 +276,33 @@ void MainComponent::loadButtonClicked(PlayerGUI* whichGui)
             PlayerGUI* guiToUpdate = (whichGui == &gui1) ? &gui1 : &gui2;
             PlayerGUI* otherGui = (whichGui == &gui1) ? &gui2 : &gui1;
 
-         
             playerToLoad->loadFile(file);
+            guiToUpdate->loadFileForThumbnail(file);
 
+            // ++++++++++ التعديل هنا ++++++++++
             auto metadata = playerToLoad->getMetadata();
             juce::String title = metadata["TITLE"];
             juce::String artist = metadata["ARTIST"];
-            if (title.isEmpty()) title = file.getFileName();
 
-            juce::String displayTitle = title;
-            if (artist.isNotEmpty()) displayTitle += " - " + artist;
+            if (title.isEmpty())
+                title = file.getFileName();
+            if (artist.isEmpty())
+                artist = "Unknown Artist";
 
-            guiToUpdate->setFileName(displayTitle);
-            // -------------------------------
+            double durationSecs = playerToLoad->getLengthInSeconds();
+            int totalSecs = static_cast<int>(std::round(durationSecs));
+            int mins = totalSecs / 60;
+            int secs = totalSecs % 60;
+            juce::String durationStr = juce::String::formatted("Duration: %02d:%02d", mins, secs);
+
+            guiToUpdate->setMetadata("Title: " + title, "Artist: " + artist, durationStr);
+            // ++++++++++++++++++++++++++++++++
 
             if (!isInMixMode) otherPlayer->pause();
             playerToLoad->play();
 
-            guiToUpdate->setDeckName(file.getFileName());
             guiToUpdate->setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
             if (!isInMixMode) otherGui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-
-       
-            guiToUpdate->loadFileForWaveform(file); 
         });
 }
 
@@ -260,14 +316,14 @@ void MainComponent::playPauseButtonClicked(PlayerGUI* whichGui)
     if (player->isPlaying())
     {
         player->pause();
-        gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\B6"));
+        gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
     }
     else
     {
         if (!isInMixMode)
         {
             otherPlayer->pause();
-            otherGui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\B6"));
+            otherGui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
         }
         player->play();
         gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x8F\xB8"));
@@ -280,9 +336,8 @@ void MainComponent::stopButtonClicked(PlayerGUI* whichGui)
     PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
 
     player->stop();
-    gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\B6"));
+    gui->setPlayButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 }
-
 
 void MainComponent::muteButtonClicked(PlayerGUI* whichGui)
 {
@@ -305,61 +360,6 @@ void MainComponent::backButtonClicked(PlayerGUI* whichGui)
 {
     PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
     player->skip(-10);
-}
-
-void MainComponent::markButtonClicked(PlayerGUI* whichGui)
-{
-    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
-    juce::uint64 uid = player->getFile()->getFileIdentifier();
-    juce::String fileID = std::to_string(uid);
-    markManager.addMark(fileID, player->getCurrentPosition());
-    updateMarksMenu(whichGui);
-    juce::ComboBox* marksMenu = whichGui->getMarksMenu();
-
-    marksMenu->setSelectedId(0);
-
-}
-
-void MainComponent::deleteMarkRequested(PlayerGUI* whichGui, int selectedID) {
-    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
-    juce::uint64 uid = player->getFile()->getFileIdentifier();
-    juce::String fileID = std::to_string(uid);
-    markManager.removeMark(fileID, selectedID - 1);
-    updateMarksMenu(whichGui);
-    juce::ComboBox* marksMenu = whichGui->getMarksMenu();
-    marksMenu->setSelectedId(0);
-
-}
-
-void MainComponent::marksMenuChanged(PlayerGUI* whichGui)
-{
-    PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
-    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
-
-
-    juce::ComboBox* marksMenu = gui->getMarksMenu();
-
-    juce::String selectedMark = marksMenu->getText();
-
-    int start = selectedMark.indexOfChar('[');
-    int end = selectedMark.indexOfChar(']');
-
-    if (start >= 0 && end > start)
-    {
-        int length = end - start - 1;
-
-        selectedMark = selectedMark.substring(start + 1, start + 1 + length);
-    }
-
-
-    juce::Array<double> marks = markManager.getMarks(std::to_string(player->getFile()->getFileIdentifier()));
-
-
-
-    if (marksMenu->getText() != "") {
-        player->getTransportSource().setPosition(selectedMark.getDoubleValue());
-    }
-
 }
 
 
@@ -417,8 +417,25 @@ void MainComponent::abLoopToggleButtonClicked(PlayerGUI* whichGui)
     updateLoopButtonText(*gui, *player);
 }
 
+void MainComponent::setCueButtonClicked(PlayerGUI* whichGui)
+{
+    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
+    PlayerGUI* gui = (whichGui == &gui1) ? &gui1 : &gui2;
 
+    double cueTime = player->setCuePoint();
+    double totalLength = player->getLengthInSeconds();
 
+    if (totalLength > 0.0)
+    {
+        gui->setCueMarker(cueTime / totalLength);
+    }
+}
+
+void MainComponent::cueButtonClicked(PlayerGUI* whichGui)
+{
+    PlayerAudio* player = (whichGui == &gui1) ? &player1 : &player2;
+    player->goToCuePoint();
+}
 
 
 void MainComponent::sliderValueChanged(juce::Slider* slider)
@@ -429,16 +446,86 @@ void MainComponent::sliderValueChanged(juce::Slider* slider)
     }
 }
 
+void MainComponent::saveSessionState(juce::PropertiesFile& props)
+{
+    props.setValue("player1_file", player1.getCurrentFile().getFullPathName());
+    props.setValue("player1_pos", player1.getCurrentPosition());
+    props.setValue("player2_file", player2.getCurrentFile().getFullPathName());
+    props.setValue("player2_pos", player2.getCurrentPosition());
+}
+
+void MainComponent::loadSessionState(juce::PropertiesFile& props)
+{
+    // --- Player 1 ---
+    juce::String file1Path = props.getValue("player1_file", juce::String{});
+    double pos1 = props.getDoubleValue("player1_pos", 0.0);
+    if (file1Path.isNotEmpty())
+    {
+        juce::File file1(file1Path);
+        if (file1.existsAsFile())
+        {
+            player1.loadFile(file1);
+            gui1.loadFileForThumbnail(file1);
+
+            
+            auto metadata = player1.getMetadata();
+            juce::String title = metadata["TITLE"];
+            juce::String artist = metadata["ARTIST"];
+            if (title.isEmpty()) title = file1.getFileName();
+            if (artist.isEmpty()) artist = "Unknown Artist";
+            double durationSecs = player1.getLengthInSeconds();
+            int totalSecs = static_cast<int>(std::round(durationSecs));
+            int mins = totalSecs / 60;
+            int secs = totalSecs % 60;
+            juce::String durationStr = juce::String::formatted("Duration: %02d:%02d", mins, secs);
+            gui1.setMetadata("Title: " + title, "Artist: " + artist, durationStr);
+            // ++++++++++++++++++++++++++++++++
+
+            player1.setPosition(pos1);
+            double totalLength = player1.getLengthInSeconds();
+            if (totalLength > 0.0)
+                gui1.setProgress(pos1 / totalLength);
+        }
+    }
+
+    // --- Player 2 ---
+    juce::String file2Path = props.getValue("player2_file", juce::String{});
+    double pos2 = props.getDoubleValue("player2_pos", 0.0);
+    if (file2Path.isNotEmpty())
+    {
+        juce::File file2(file2Path);
+        if (file2.existsAsFile())
+        {
+            player2.loadFile(file2);
+            gui2.loadFileForThumbnail(file2);
+
+           
+            auto metadata = player2.getMetadata();
+            juce::String title = metadata["TITLE"];
+            juce::String artist = metadata["ARTIST"];
+            if (title.isEmpty()) title = file2.getFileName();
+            if (artist.isEmpty()) artist = "Unknown Artist";
+            double durationSecs = player2.getLengthInSeconds();
+            int totalSecs = static_cast<int>(std::round(durationSecs));
+            int mins = totalSecs / 60;
+            int secs = totalSecs % 60;
+            juce::String durationStr = juce::String::formatted("Duration: %02d:%02d", mins, secs);
+            gui2.setMetadata("Title: " + title, "Artist: " + artist, durationStr);
+            // ++++++++++++++++++++++++++++++++
+
+            player2.setPosition(pos2);
+            double totalLength = player2.getLengthInSeconds();
+            if (totalLength > 0.0)
+                gui2.setProgress(pos2 / totalLength);
+        }
+    }
+}
 
 void MainComponent::updateGains()
 {
-
     float val = crossfader.getValue();
-
-
     float crossfaderGain1 = std::cos(val * juce::MathConstants<double>::halfPi);
     float crossfaderGain2 = std::cos((1.0 - val) * juce::MathConstants<double>::halfPi);
-
 
     player1.setGain(player1ChannelVolume * crossfaderGain1);
     player2.setGain(player2ChannelVolume * crossfaderGain2);
@@ -448,7 +535,6 @@ void MainComponent::updateGains()
 
 void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate)
 {
-
     mixer.prepareToPlay(samplesPerBlockExpected, sampleRate);
     player1.prepareToPlay(samplesPerBlockExpected, sampleRate);
     player2.prepareToPlay(samplesPerBlockExpected, sampleRate);
@@ -456,13 +542,11 @@ void MainComponent::prepareToPlay(int samplesPerBlockExpected, double sampleRate
 
 void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill)
 {
-
     mixer.getNextAudioBlock(bufferToFill);
 }
 
 void MainComponent::releaseResources()
 {
-
     mixer.releaseResources();
     player1.releaseResources();
     player2.releaseResources();
@@ -472,8 +556,7 @@ void MainComponent::releaseResources()
 
 void MainComponent::paint(juce::Graphics& g)
 {
-
-    g.fillAll(juce::Colour::fromRGB(30, 35, 50));
+    g.fillAll(currentTheme.bg);
 }
 
 void MainComponent::resized()
@@ -482,6 +565,9 @@ void MainComponent::resized()
     int gap = 10;
     int controlHeight = 40;
     int playerHeight = 310;
+
+    auto topBar = area.removeFromTop(30);
+    themeToggleButton.setBounds(topBar.removeFromRight(100).reduced(5));
 
 
     int playlistHeight = area.getHeight() - (playerHeight * 2) - controlHeight - (gap * 3);
@@ -522,5 +608,4 @@ void MainComponent::resized()
 
     playlistBox.setBounds(playlistArea.reduced(gap, 0));
     playlistBox.setRowHeight(25);
-
 }
