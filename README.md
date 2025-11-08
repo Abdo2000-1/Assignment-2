@@ -63,8 +63,7 @@ This is a JUCE project and must be compiled using the Projucer.
 The program supports loading and saving the following audio formats:
 * MP3
 * WAV
-* FLAC
-* OGG
+
 
 ---
 
@@ -72,15 +71,12 @@ The program supports loading and saving the following audio formats:
 
 This project was a collaborative effort by the following students:
 
-* **[Your Name / ID Here]**
-* **[Your Partner's Name / ID Here]**
 
 Repository Link: [**https://github.com/YourUsername/YourRepo**]
 
 ---
 ---
 
-# 🎧 مشغل الأهلي الصوتي v2.0
 
 مشغل صوتي احترافي مزدوج (Double Deck) تم تطويره باستخدام لغة C++ وإطار عمل **JUCE**. تم تطوير هذا التطبيق كمشروع لمادة [**اسم المادة هنا**] تحت إشراف [**اسم المشرف هنا**]. يتيح البرنامج للمستخدمين تحميل مقطعين صوتيين، والخلط بينهما، والتحكم بالتشغيل، وإدارة قائمة تشغيل.
 
@@ -145,8 +141,6 @@ Repository Link: [**https://github.com/YourUsername/YourRepo**]
 البرنامج يدعم تحميل وحفظ الصور بالصيغ التالية:
 * MP3
 * WAV
-* FLAC
-* OGG
 
 ---
 
@@ -154,7 +148,6 @@ Repository Link: [**https://github.com/YourUsername/YourRepo**]
 
 هذا المشروع هو نتاج عمل جماعي قام به الطلاب:
 
-* **[اسمك / رقمك الأكاديمي هنا]**
-* **[اسم زميلك / رقمه الأكاديمي هنا]**
+
 
 رابط المستودع: [**https://github.com/YourUsername/YourRepo**]
